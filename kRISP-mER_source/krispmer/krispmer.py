@@ -14,6 +14,7 @@ import logging
 import os
 import subprocess
 from collections import Counter
+import time
 
 pam = "NGG"
 grna_length = 20
@@ -272,13 +273,17 @@ def krispmer_main(parsed_args):
     # already have in this version
 
     # initial jellyfish run
+    start_time = time.time()
     print('Doing an initial run of Jellyfish to count k-mers in reads (may take some time).')
     logging.info('Doing an initial run of Jellyfish to count k-mers in reads.')
     jellyfish_binary_file = initial_jellyfish_run(parsed_args.reads_file)
     logging.info('Completed the initial run.\n')
     print('Completed the run successfully.\n')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time-start_time) + ' seconds\n')
 
     # personalized gRNA as a string
+    start_time = time.time()
     if parsed_args.detect_variant:
         logging.info('Generating personalized version of the target\n')
         print('Generating personalized version of the target\n')
@@ -290,14 +295,20 @@ def krispmer_main(parsed_args):
         modified_target_string = read_target_region(parsed_args.target_file)
         logging.info('Proceeding with given target: ' + modified_target_string)
         print('Proceeding with given target: ' + modified_target_string + '\n')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # generate k-mer spectrum histogram data
+    start_time = time.time()
     print('Generating histogram data from Jellyfish counted database (may take some time).\n')
     logging.info('Generating histogram data from the initial Jellyfish database.')
     histogram_data_dictionary = generate_k_spectrum_histogram(jellyfish_binary_file)
     logging.info('Finished generating histogram data\n')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # determine all candidate list
+    start_time = time.time()
     print('Generating all potential candidates.\n')
     logging.info('Generating list of potential candidates...')
     candidates_count_dictionary = candidate_generator.get_list_of_candidates(modified_target_string, pam, grna_length,
@@ -305,6 +316,8 @@ def krispmer_main(parsed_args):
                                                                              parsed_args.consider_negative,
                                                                              parsed_args.altPAMs)
     logging.info('Finished generating list of potential candidates...\n')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # determine priors, posteriors and read-coverage using EM
     global read_coverage
@@ -316,11 +329,14 @@ def krispmer_main(parsed_args):
         savgol_filter_window = parsed_args.savgol_filter_window
     print('Calculating priors using EM (may take some time).')
     logging.info('Calculating priors...')
+    start_time = time.time()
     priors, posteriors, read_coverage = determine_priors_posteriors(histogram_data_dictionary,
                                                                     max_limit_count, savgol_filter_window)
     global max_k
     max_k = len(posteriors)
     logging.info('Finished calculating priors and posteriors\n')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # initialize poisson probability table
     global probability_table
@@ -329,6 +345,7 @@ def krispmer_main(parsed_args):
     # perform MLE to determine target coverage
     print ('Determining copy-number of target in genome.\n')
     logging.info('Starting MLE to determine copy-number of target in genome.')
+    start_time = time.time()
     global target_coverage
     k_spectrum_data_in_target, position_count_dict = generate_k_spectrum_of_target_and_count(modified_target_string, jellyfish_binary_file,
                                                                         max_k)
@@ -348,10 +365,13 @@ def krispmer_main(parsed_args):
         window_copy_numbers[i] = estimated_copy_number_of_window
 
     logging.info(window_copy_numbers)
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # annotate all guides
     print('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs\n')
     logging.info('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs')
+    start_time = time.time()
     list_candidates = annotate_guides_with_score(candidates_count_dictionary,
                                                  window_copy_numbers,
                                                  jellyfish_binary_file,
@@ -368,6 +388,8 @@ def krispmer_main(parsed_args):
         list_candidates = [c for c in list_candidates if c[1] <= parsed_args.cutoff_score]
 
     print('Finished processing.')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
     return list_candidates
 
 
