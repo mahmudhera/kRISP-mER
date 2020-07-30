@@ -51,7 +51,7 @@ def determine_points(histo_data, savgol_filter_window):
     return lower, higher
 
 
-def expectation_maximization2(data_points_raw, init_mean, max_count, max_k):
+def expectation_maximization(data_points_raw, init_mean, max_count, max_k):
     logging.info('The histogram data:')
     logging.info(data_points_raw)
     # filter data points so that too large points are not there
