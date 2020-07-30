@@ -13,6 +13,7 @@ from get_cfd_score import get_score
 import logging
 import os
 import subprocess
+from collections import Counter
 
 pam = "NGG"
 grna_length = 20
@@ -25,6 +26,7 @@ savgol_filter_window = 9
 hist_output = 'krispmer_temp/k_spectrum_histo_data'
 read_coverage = -1
 target_coverage = -1
+default_sliding_window_length = 30
 
 
 def generate_parser():
@@ -48,7 +50,8 @@ def generate_parser():
     # optional arguments
     parser.add_argument("-m", "--max_copy_number", type=int, help="enter the highest number of times you think a "
                                                                   "genome region may repeat. Default: 50.")
-    parser.add_argument("-w", "--savgol_filter_window", type=int,
+    parser.add_argument("-w", "--target_sliding_window_size", type=int, help="the size of target sliding window")
+    parser.add_argument("-f", "--savgol_filter_window", type=int,
                         help="enter the window size of savgol filter. This must be an odd integer. Default: 9.")
     parser.add_argument("-s", "--stop", help="identify stop codons in guides and exclude those guides",
                         action="store_true")
@@ -102,7 +105,7 @@ def initial_jellyfish_run(reads_file_for_jellyfish):
         candidate_length) + " -s 100M -o " + jf_count_file + " -t 20 -C " + reads_file_for_jellyfish
     jf_command_args = jf_command.split(" ")
     # todo: uncomment this later
-    subprocess.call(jf_command_args)
+    # subprocess.call(jf_command_args)
     return jf_count_file
 
 
@@ -122,7 +125,7 @@ def generate_k_spectrum_histogram(jellyfish_file, histo_output_file=hist_output)
     return read_histogram(histo_output_file)
 
 
-def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file, max_k_limit=200):
+def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file, max_k_limit):
     """
     k-spectrum of target, then count the k-mers found within the target, then generate the histogram
     :type max_k_limit: int
@@ -135,18 +138,25 @@ def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file,
     target = target_string
     length = len(target)
     a = set()
-    for i in range(length - k):
-        a.add(target[i:i + k])
-    lst = []
+    counts_in_positions = {}
+    k_spectrum = {}
     qf = jellyfish.QueryMerFile(jellyfish_count_file)
-    for subst in a:
+    for i in range(length - k + 1):
+        subst = target[i:i + k]
         mer = jellyfish.MerDNA(subst)
-        count = qf[mer]
-        lst.append(count)
-    dic = {}
-    for i in range(max_k_limit):
-        dic[i + 1] = lst.count(i + 1)
-    return dic
+        rev_mer = jellyfish.MerDNA(reverse_complement(subst))
+        count = max(qf[mer], qf[rev_mer])
+        counts_in_positions[i] = count
+        if count == 0:
+            logging.info("Count = 0 for substring " + subst)
+            continue
+        if subst not in a:
+            a.add(subst)
+            if count in k_spectrum.keys():
+                k_spectrum[count] += 1
+            else:
+                k_spectrum[count] = 1
+    return k_spectrum, counts_in_positions
 
 
 def sort_second(val):
@@ -185,12 +195,12 @@ def get_probability(count, k):
     return probability_table[count][k]
 
 
-def annotate_guides_with_score(candidates_count_dictionary, jellyfish_filename, priors, posteriors, max_hd,
-                               target_string, target_coverage):
+def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers, jellyfish_filename, priors,
+                               posteriors, max_hd, target_string, target_coverage, window_size, target_length):
     iteration_count = 0
     list_candidates = []
     for candidate in list(candidates_count_dictionary.keys()):
-        strand_type = candidates_count_dictionary[candidate]
+        strand_type = candidates_count_dictionary[candidate][0]
         trie = generate_adjacent_mers(candidate, max_hd)
         value1 = value2 = 0.0
         logging.info('Processing candidate ' + candidate + '...')
@@ -221,11 +231,23 @@ def annotate_guides_with_score(candidates_count_dictionary, jellyfish_filename, 
             value2 = value2 + cp * accum
         if value1 <= 0.0 or flag is False:
             continue
-        score = 1.0 * value2 / (value1 * target_coverage)
+        guideRNA_positions_in_target = candidates_count_dictionary[candidate][1:]
+        # do math to figure out why the windows spanning a gRNA starting at position n are n+23-w:n
+        # hint: w-sized window, 23 sized seq, w-22 windows will fit this
+        windows_spanning_this_guideRNA = []
+        for guideRNA_position in guideRNA_positions_in_target:
+            lower = max(0, guideRNA_position+candidate_length-window_size)
+            upper = min(guideRNA_position+candidate_length-1, target_length-window_size)
+            spanning_windows = range(lower, upper+1)
+            windows_spanning_this_guideRNA = windows_spanning_this_guideRNA + spanning_windows
+        estimated_copy_numbers = [window_copy_numbers[window_position] for window_position in windows_spanning_this_guideRNA]
+        counted_copy_numbers = Counter(estimated_copy_numbers)
+        estimated_target_coverage = counted_copy_numbers.most_common(1)[0][0]
+        score = 1.0 * value2 / (value1 * estimated_target_coverage)
         qf = jellyfish.QueryMerFile(jellyfish_filename)
         merDNA = jellyfish.MerDNA(candidate)
         k = max(qf[merDNA], qf[jellyfish.MerDNA(reverse_complement(candidate))])
-        list_candidates.append((candidate, score, k, trie, strand_type))
+        list_candidates.append((candidate, score, k, trie, strand_type, estimated_target_coverage))
         iteration_count = iteration_count + 1
         logging.info('Processed ' + str(iteration_count) + 'th gRNA: ' + candidate + ' with score= ' + str(score))
     logging.info('DONE processing all candidates! Sorting...')
@@ -279,7 +301,6 @@ def krispmer_main(parsed_args):
                                                                              parsed_args.consider_negative,
                                                                              parsed_args.altPAMs)
     logging.info('Finished generating list of potential candidates...\n')
-    logging.info(candidates_count_dictionary)
 
     # determine priors, posteriors and read-coverage using EM
     global read_coverage
@@ -305,18 +326,38 @@ def krispmer_main(parsed_args):
     print ('Determining copy-number of target in genome.\n')
     logging.info('Starting MLE to determine copy-number of target in genome.')
     global target_coverage
-    k_spectrum_data_in_target = generate_k_spectrum_of_target_and_count(modified_target_string, jellyfish_binary_file,
+    k_spectrum_data_in_target, position_count_dict = generate_k_spectrum_of_target_and_count(modified_target_string, jellyfish_binary_file,
                                                                         max_k)
     logging.info('The k-spectrum restricted with-in the k-mers of target string:')
     logging.info(k_spectrum_data_in_target)
     target_coverage = get_target_coverage(k_spectrum_data_in_target, read_coverage)
-    logging.info('The target appears ' + str(target_coverage) + ' times')
+    logging.info('The target is estimated_to_appear ' + str(target_coverage) + ' times')
+
+    window_length = parsed_args.target_sliding_window_size
+    if window_length is None:
+        window_length = default_sliding_window_length
+    window_copy_numbers = {}
+    for i in range(len(modified_target_string) - window_length + 1):
+        restricted_counts = [position_count_dict[key] for key in range(i,i+window_length-candidate_length+1)]
+        restricted_k_spectrum_in_this_window = {k:restricted_counts.count(k) for k in restricted_counts}
+        estimated_copy_number_of_window = get_target_coverage(restricted_k_spectrum_in_this_window, read_coverage)
+        window_copy_numbers[i] = estimated_copy_number_of_window
+
+    logging.info(window_copy_numbers)
 
     # annotate all guides
-    print('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs')
+    print('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs\n')
     logging.info('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs')
-    list_candidates = annotate_guides_with_score(candidates_count_dictionary, jellyfish_binary_file, priors, posteriors,
-                                                 parsed_args.max_hd, modified_target_string, target_coverage)
+    list_candidates = annotate_guides_with_score(candidates_count_dictionary,
+                                                 window_copy_numbers,
+                                                 jellyfish_binary_file,
+                                                 priors,
+                                                 posteriors,
+                                                 parsed_args.max_hd,
+                                                 modified_target_string,
+                                                 target_coverage,
+                                                 window_length,
+                                                 len(modified_target_string))
 
     # filter guides using cut-off score
     if parsed_args.cutoff_score is not None:

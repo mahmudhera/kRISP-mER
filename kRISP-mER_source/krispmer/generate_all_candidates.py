@@ -17,7 +17,7 @@ class NFiller:
             i = s.find(p, i + 1)
 
     def recursive_N_filler(self, whole, lst, ipositions):
-        if (not ipositions):
+        if not ipositions:
             return lst
         for c in self.bases:
             lst2 = list(lst)
@@ -84,6 +84,7 @@ def get_list_of_candidates(target_string, PAM, gRNA_length, exclude_stop_codons,
                 if character != 'A' and character != 'C' and character != 'G' and character != 'T':
                     raise ValueError('Invalid PAM has been entered')
         PAMs = alt_pams
+    len_pams = 3
     candidates_rev = []
     candidates = []
     for PAM in PAMs:
@@ -95,12 +96,18 @@ def get_list_of_candidates(target_string, PAM, gRNA_length, exclude_stop_codons,
         key = candidate[1]
         if exclude_stop_codons and ('TAG' in key or 'TAA' in key or 'TGA' in key):
             continue
+        candidate_position = candidate[0]
         if key not in trie_dic.keys():
-            trie_dic[key] = '+'
+            trie_dic[key] = ['+', candidate_position]
+        else:
+            trie_dic[key].append(candidate_position)
     for candidate in candidates_rev:
         if exclude_stop_codons and ('TAG' in candidate[1] or 'TAA' in candidate[1] or 'TGA' in candidate[1]):
             continue
         key = reverse_complement(candidate[1])
+        candidate_position = len(target_string) - candidate[0] - gRNA_length - len_pams
         if key not in trie_dic.keys():
-            trie_dic[key] = '-'
+            trie_dic[key] = ['-', candidate_position]
+        else:
+            trie_dic[key].append(candidate_position)
     return trie_dic
