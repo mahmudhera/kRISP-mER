@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'krispmer',
-    version = '0.0.3',
+    version = '0.0.4',
     author= 'Mahmudur Rahman Hera',
     author_email= 'mahmudhera93@gmail.com',
     description = 'A tool to design CRISPR guideRNA without using reference genome',
