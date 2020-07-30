@@ -174,10 +174,14 @@ def reverse_complement(s):
     return complement(s[::-1])
 
 
+logsum = {}
+
+
 def get_poisson(count, k):
     logarithm = -read_coverage * count + k * np.log(read_coverage * count)
-    for i in range(2, k + 1):
-        logarithm -= np.log(i)
+    if k not in logsum.keys():
+        logsum[k] = np.sum(np.log(np.arange(2, k + 1, 1.0)))
+    logarithm -= logsum[k]
     return np.exp(logarithm)
 
 

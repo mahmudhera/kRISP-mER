@@ -7,7 +7,6 @@ import logging
 import time
 
 threshold = 0.1
-
 logsum_k = {}
 
 
@@ -18,7 +17,7 @@ class poisson:
     def get_probability(self, k):
         total = -self.mean + k * np.log(self.mean)
         if k not in logsum_k.keys():
-            logsum_k[k] = sum(np.log(np.arange(2, k + 1, 1.0)))
+            logsum_k[k] = np.sum(np.log(np.arange(2, k + 1, 1.0)))
         total -= logsum_k[k]
         return np.exp(total)
 
