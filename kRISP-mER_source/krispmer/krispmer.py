@@ -104,7 +104,6 @@ def initial_jellyfish_run(reads_file_for_jellyfish, jf_threads):
     :param reads_file_for_jellyfish: the reads file, fasta or fastq :return: None
     :param jf_threads: number of jellyfish threads
     """
-    print('Hi')
     if not os.path.isdir('./krispmer_temp'):
         print('Creating krispmer_temp directory as it does not exist.')
         cmd = 'mkdir krispmer_temp'
@@ -112,11 +111,9 @@ def initial_jellyfish_run(reads_file_for_jellyfish, jf_threads):
         subprocess.call(cmd_args)
     jf_command = "jellyfish count -m " + str(
         candidate_length) + " -s 100M -o " + jf_count_file + " -t " + str(jf_threads) + " -C " + reads_file_for_jellyfish
-    print(jf_command)
-    print('Hi')
     jf_command_args = jf_command.split(" ")
     # todo: uncomment this later
-    subprocess.call(jf_command_args)
+    # subprocess.call(jf_command_args)
     return jf_count_file
 
 
