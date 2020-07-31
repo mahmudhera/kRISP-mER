@@ -97,22 +97,26 @@ def parse_arguments(arg_string = None):
     return args_after_parsing
 
 
-def initial_jellyfish_run(reads_file_for_jellyfish):
+def initial_jellyfish_run(reads_file_for_jellyfish, jf_threads):
     """
     k-mer counting using jellyfish. takes the reads file, counts k-mers and stores in another file named
     'jf_mer_count_file'
     :param reads_file_for_jellyfish: the reads file, fasta or fastq :return: None
+    :param jf_threads: number of jellyfish threads
     """
+    print('Hi')
     if not os.path.isdir('./krispmer_temp'):
         print('Creating krispmer_temp directory as it does not exist.')
         cmd = 'mkdir krispmer_temp'
         cmd_args = cmd.split(' ')
         subprocess.call(cmd_args)
     jf_command = "jellyfish count -m " + str(
-        candidate_length) + " -s 100M -o " + jf_count_file + " -t 20 -C " + reads_file_for_jellyfish
+        candidate_length) + " -s 100M -o " + jf_count_file + " -t " + str(jf_threads) + " -C " + reads_file_for_jellyfish
+    print(jf_command)
+    print('Hi')
     jf_command_args = jf_command.split(" ")
     # todo: uncomment this later
-    # subprocess.call(jf_command_args)
+    subprocess.call(jf_command_args)
     return jf_count_file
 
 
@@ -282,7 +286,7 @@ def krispmer_main(parsed_args):
     start_time = time.time()
     print('Doing an initial run of Jellyfish to count k-mers in reads (may take some time).')
     logging.info('Doing an initial run of Jellyfish to count k-mers in reads.')
-    jellyfish_binary_file = initial_jellyfish_run(parsed_args.reads_file)
+    jellyfish_binary_file = initial_jellyfish_run(parsed_args.reads_file, parsed_args.jf_threads)
     logging.info('Completed the initial run.\n')
     print('Completed the run successfully.\n')
     end_time = time.time()
