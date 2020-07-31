@@ -293,7 +293,11 @@ def krispmer_main(parsed_args):
     if parsed_args.detect_variant:
         logging.info('Generating personalized version of the target\n')
         print('Generating personalized version of the target\n')
-        modified_target_string = detect_variant(parsed_args.target_file, parsed_args.reads_file)
+        modified_target_string = detect_variant(parsed_args.target_file, parsed_args.reads_file,
+                                                parsed_args.bt2_threads,
+                                                parsed_args.samtools_threads,
+                                                parsed_args.sort_threads,
+                                                parsed_args.pilon_threads)
         logging.info('Personalized target identified')
         logging.info('The target is: ' + modified_target_string)
         print('Personalized target identified\n')
