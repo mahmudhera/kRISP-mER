@@ -93,6 +93,11 @@ kRISP-mER allows you to design guide RNAs with WGS shotgun reads (in a FASTQ fil
 1. `-c`: You can set a cut-off score of the inverse-specificity using the flag `-c`. The guideRNAs with score higher than that will be dropped.
 1. `-a PAM1 PAM2 ...`: You can provide kRISP-mER with a list of PAMs to consider with `-a` flag. By default, NGG PAMs are considered. 
 1. `-r`: You can choose to remove the temporary files automatically using the flag `-r`
+1. `-j`: You can set the number of threads you want to use to count the k-mers in the sequenced reads using Jellyfish using the flag `-j`
+1. `-b`: You can set the number of bowtie2 threads with the flag `-b`
+1. `-S`: You can set the number of samtools threads with the flag `-S`
+1. `-B`: You can set the number of threads you want to use to sort the intermediate BAM file using the flag `-B`
+1. `-p`: You can set the number of threads to be used in Pilon using the flag `-p`
 
 ### Example
 ```shell script
