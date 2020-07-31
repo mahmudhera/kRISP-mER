@@ -53,7 +53,9 @@ def detect_variant(target_filename, reads_filename, bt2_threads, samtools_thread
         f.write('samtools view -@' + str(samtools_threads) + ' -bS sam_out.sam > bam_out.bam\n')
         f.write('samtools sort -@' + str(sort_threads) + ' bam_out.bam > bam_sorted.bam\n')
         f.write('samtools index -@' + str(samtools_threads) + ' bam_sorted.bam\n')
-        f.write('java -Xmx16G -jar pilon-1.23.jar --genome ../' + target_filename + ' --unpaired bam_sorted.bam --threads ' + str(pilon_threads) + '\n')
+        f.write('java -Xmx16G -jar pilon-1.23.jar --genome ../' + target_filename + '--unpaired bam_sorted.bam '
+                                                                                    '--threads ' + str(pilon_threads)
+                + '\n')
         f.close()
     return_code = subprocess.call(['bash', 'krispmer_temp/commands_py.sh'])
     if return_code != 0:
