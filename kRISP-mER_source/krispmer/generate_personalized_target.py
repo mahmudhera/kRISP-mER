@@ -20,7 +20,7 @@ def read_target_region(filename):
     return string_.upper()
 
 
-def detect_variant(target_filename, reads_filename):
+def detect_variant(target_filename, reads_filename, bt2_threads, samtools_threads, sort_threads, pilon_threads):
     """
 	Reads the target, aligns the seq reads on the target using bowtie2,
 	uses Pilon to detect the genetic variations,
@@ -28,6 +28,10 @@ def detect_variant(target_filename, reads_filename):
 
     :param target_filename: the target region filename as a fasta
     :param reads_filename: the fastq/fasta reads file. Currently, only unpaired
+    :param bt2_threads: number of bowtie2 threads
+    :param samtools_threads: number of samtools threads
+    :param sort_threads: number of threads to sort the bam file
+    :param pilon_threads: number of threads to be used in pilon
     :return: returns the target region after detecting personalized variations as a string
 	"""
     if not os.path.isdir('./krispmer_temp'):
@@ -45,11 +49,11 @@ def detect_variant(target_filename, reads_filename):
     with open('krispmer_temp/commands_py.sh', 'w') as f:
         f.write('cd ./krispmer_temp\n')
         f.write('bowtie2-build -f ../' + target_filename + ' krispmer\n')
-        f.write('bowtie2 --local -x krispmer -U ../' + reads_filename + ' -S sam_out.sam\n')
-        f.write('samtools view -bS sam_out.sam > bam_out.bam\n')
-        f.write('samtools sort bam_out.bam > bam_sorted.bam\n')
-        f.write('samtools index bam_sorted.bam\n')
-        f.write('java -Xmx16G -jar pilon-1.23.jar --genome ../' + target_filename + ' --unpaired bam_sorted.bam\n')
+        f.write('bowtie2 --local --threads ' + str(bt2_threads) + ' -x krispmer -U ../' + reads_filename + ' -S sam_out.sam\n')
+        f.write('samtools view -@' + str(samtools_threads) + ' -bS sam_out.sam > bam_out.bam\n')
+        f.write('samtools sort -@' + str(sort_threads) + ' bam_out.bam > bam_sorted.bam\n')
+        f.write('samtools index -@' + str(samtools_threads) + ' bam_sorted.bam\n')
+        f.write('java -Xmx16G -jar pilon-1.23.jar --genome ../' + target_filename + ' --unpaired bam_sorted.bam --threads ' + str(pilon_threads) + '\n')
         f.close()
     return_code = subprocess.call(['bash', 'krispmer_temp/commands_py.sh'])
     if return_code != 0:
