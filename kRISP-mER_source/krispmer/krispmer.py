@@ -64,12 +64,12 @@ def generate_parser():
     parser.add_argument("-a", "--altPAMs", type=str, help="Type in the NGG pams that you want to work with", nargs='+')
     parser.add_argument("-r", "--remove_temp", help="Remove temporarily created files",
                         action="store_true")
-    parser.add_argument("-j", "--jf_threads", type=int, help="Number of jellyfish threads you want (default: 32)")
-    parser.add_argument("-b", "--bt2_threads", type=int, help="Number of bowtie2 threads you want (default: 32)")
-    parser.add_argument("-S", "--st_threads", type=int, help="Number of samtools threads you want (default: 32)")
+    parser.add_argument("-j", "--jf_threads", type=int, help="Number of jellyfish threads you want (default: 32)", default=32)
+    parser.add_argument("-b", "--bt2_threads", type=int, help="Number of bowtie2 threads you want (default: 32)", default=32)
+    parser.add_argument("-S", "--samtools_threads", type=int, help="Number of samtools threads you want (default: 32)", default=32)
     parser.add_argument("-B", "--sort_threads", type=int, help="Number of threads you want to sort bam file (default: "
-                                                               "16)")
-    parser.add_argument("-p", "--pilon_threads", type=int, help="Number of pilon threads you want (default: 32)")
+                                                               "16)", default=16)
+    parser.add_argument("-p", "--pilon_threads", type=int, help="Number of pilon threads you want (default: 32)", default=32)
     return parser
 
 
