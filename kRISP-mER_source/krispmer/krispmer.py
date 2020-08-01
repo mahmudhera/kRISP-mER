@@ -140,8 +140,11 @@ def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file,
     :param target_string: the target string
     :param jellyfish_count_file: jellyfish binary file name
     :param max_k_limit: max value upto which the histogram is to be generated
-    :return: the histogram data in a dictionary
+    :return: the histogram data in a dictionary as k_spectrum, and the counts of k-mers indexed as positions
     """
+    # a pair is returned
+    # pair.first = the k-spectrum histogram of k-mers taken only from the target region
+    # pair.second = a hash-map that has keys:positions in target, values:count of a k-mer in that position
     k = candidate_length
     target = target_string
     length = len(target)
