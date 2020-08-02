@@ -38,7 +38,7 @@ def generate_parser():
     parser = argparse.ArgumentParser()
 
     # positional arguments
-    parser.add_argument("reads_file", type=str, help="provide the filename of the reads file with path")
+    parser.add_argument("reads_file", type=str, help="provide the filename of the reads file")
     parser.add_argument("target_file", type=str,
                         help="provide the filename of the file where there is the target region. Specify with full "
                              "path.")
@@ -49,6 +49,7 @@ def generate_parser():
                              "and 3, inclusive")
 
     # optional arguments
+    parser.add_argument("-J", "jf_file", type=str, help="Jellyfish binary file (to avoid generating the file repeatedly")
     parser.add_argument("-m", "--max_copy_number", type=int, help="enter the highest number of times you think a "
                                                                   "genome region may repeat. Default: 50.")
     parser.add_argument("-w", "--target_sliding_window_size", type=int, help="the size of target sliding window")
@@ -114,8 +115,7 @@ def initial_jellyfish_run(reads_file_for_jellyfish, jf_threads):
     jf_command = "jellyfish count -m " + str(
         candidate_length) + " -s 100M -o " + jf_count_file + " -t " + str(jf_threads) + " -C " + reads_file_for_jellyfish
     jf_command_args = jf_command.split(" ")
-    # todo: uncomment this later
-    # subprocess.call(jf_command_args)
+    subprocess.call(jf_command_args)
     return jf_count_file
 
 
@@ -285,14 +285,25 @@ def krispmer_main(parsed_args):
     # already have in this version
 
     # initial jellyfish run
-    start_time = time.time()
-    print('Doing an initial run of Jellyfish to count k-mers in reads (may take some time).')
-    logging.info('Doing an initial run of Jellyfish to count k-mers in reads.')
-    jellyfish_binary_file = initial_jellyfish_run(parsed_args.reads_file, parsed_args.jf_threads)
-    logging.info('Completed the initial run.\n')
-    print('Completed the run successfully.\n')
-    end_time = time.time()
-    logging.info('Time needed: ' + str(end_time-start_time) + ' seconds\n')
+    if parsed_args.jf_file is None:
+        start_time = time.time()
+        print('Jellyfish binary file not provided. Doing an initial run of Jellyfish to count'
+              ' k-mers in reads (may take some time).')
+        logging.info('No jf file given. Doing an initial run of Jellyfish to count k-mers in reads.')
+        jellyfish_binary_filename = initial_jellyfish_run(parsed_args.reads_file, parsed_args.jf_threads)
+        logging.info('Completed the initial run.\n')
+        print('Completed the run successfully.\n')
+        end_time = time.time()
+        logging.info('Time needed: ' + str(end_time-start_time) + ' seconds\n')
+    else:
+        print('Jellyfish binary file given as input. No need to run Jellyfish. Accessing the file.')
+        logging.info('Jellyfish binary file given as input. No need to run Jellyfish. Accessing the file.\n')
+        jellyfish_binary_filename = parsed_args.jf_file
+        if not os.path.isfile(jellyfish_binary_filename):
+            print('The Jellyfish binary file does not exist. Exiting...')
+            logging.info('The Jellyfish binary file does not exist. Exiting...')
+            exit(-1)
+        print('File exists.')
 
     # personalized gRNA as a string
     start_time = time.time()
@@ -318,7 +329,7 @@ def krispmer_main(parsed_args):
     start_time = time.time()
     print('Generating histogram data from Jellyfish counted database (may take some time).\n')
     logging.info('Generating histogram data from the initial Jellyfish database.')
-    histogram_data_dictionary = generate_k_spectrum_histogram(jellyfish_binary_file)
+    histogram_data_dictionary = generate_k_spectrum_histogram(jellyfish_binary_filename)
     logging.info('Finished generating histogram data\n')
     end_time = time.time()
     logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
@@ -363,7 +374,7 @@ def krispmer_main(parsed_args):
     logging.info('Starting MLE to determine copy-number of target in genome.')
     start_time = time.time()
     global target_coverage
-    k_spectrum_data_in_target, position_count_dict = generate_k_spectrum_of_target_and_count(modified_target_string, jellyfish_binary_file,
+    k_spectrum_data_in_target, position_count_dict = generate_k_spectrum_of_target_and_count(modified_target_string, jellyfish_binary_filename,
                                                                         max_k)
     logging.info('The k-spectrum restricted with-in the k-mers of target string:')
     logging.info(k_spectrum_data_in_target)
@@ -390,7 +401,7 @@ def krispmer_main(parsed_args):
     start_time = time.time()
     list_candidates = annotate_guides_with_score(candidates_count_dictionary,
                                                  window_copy_numbers,
-                                                 jellyfish_binary_file,
+                                                 jellyfish_binary_filename,
                                                  priors,
                                                  posteriors,
                                                  parsed_args.max_hd,
