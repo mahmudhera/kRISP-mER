@@ -49,7 +49,10 @@ def generate_parser():
                              "and 3, inclusive")
 
     # optional arguments
-    parser.add_argument("-J", "--jf_file", type=str, help="Jellyfish binary file (to avoid generating the file repeatedly")
+    parser.add_argument("-J", "--jf_filename", type=str,
+                        help="Jellyfish binary filename (to avoid generating the file repeatedly)")
+    parser.add_argument("-H", "--jf_histo_filename", type=str,
+                        help="Jellyfish histogram filename (computed by 'jellyfish histo' command)")
     parser.add_argument("-m", "--max_copy_number", type=int, help="enter the highest number of times you think a "
                                                                   "genome region may repeat. Default: 50.")
     parser.add_argument("-w", "--target_sliding_window_size", type=int, help="the size of target sliding window")
@@ -285,7 +288,7 @@ def krispmer_main(parsed_args):
     # already have in this version
 
     # initial jellyfish run
-    if parsed_args.jf_file is None:
+    if parsed_args.jf_filename is None:
         start_time = time.time()
         print('Jellyfish binary file not provided. Doing an initial run of Jellyfish to count'
               ' k-mers in reads (may take some time).')
@@ -298,7 +301,7 @@ def krispmer_main(parsed_args):
     else:
         print('Jellyfish binary file given as input. No need to run Jellyfish. Accessing the file.')
         logging.info('Jellyfish binary file given as input. No need to run Jellyfish. Accessing the file.\n')
-        jellyfish_binary_filename = parsed_args.jf_file
+        jellyfish_binary_filename = parsed_args.jf_filename
         if not os.path.isfile(jellyfish_binary_filename):
             print('The Jellyfish binary file does not exist. Exiting...')
             logging.info('The Jellyfish binary file does not exist. Exiting...')
@@ -326,13 +329,24 @@ def krispmer_main(parsed_args):
     logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # generate k-mer spectrum histogram data
-    start_time = time.time()
-    print('Generating histogram data from Jellyfish counted database (may take some time).\n')
-    logging.info('Generating histogram data from the initial Jellyfish database.')
-    histogram_data_dictionary = generate_k_spectrum_histogram(jellyfish_binary_filename)
-    logging.info('Finished generating histogram data\n')
-    end_time = time.time()
-    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
+    if parsed_args.jf_histo_filename is None:
+        start_time = time.time()
+        print('Generating histogram data from Jellyfish counted database (may take some time).\n')
+        logging.info('Generating histogram data from the initial Jellyfish database.')
+        histogram_data_dictionary = generate_k_spectrum_histogram(jellyfish_binary_filename)
+        logging.info('Finished generating histogram data\n')
+        end_time = time.time()
+        logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
+    else:
+        histo_filename = parsed_args.jf_histo_filename
+        print('Jellyfish histogram file ' + histo_filename + ' is given input. Accessing file.')
+        if not os.path.isfile(histo_filename):
+            print('File does not exist. Exiting')
+            logging.info('Histogram file does not exist. Exiting.\n')
+            exit(-1)
+        print('File exists. Reading the histogram.')
+        logging.info('Histogram file exists. Reading the histogram.\n')
+        histogram_data_dictionary = read_histogram(histo_filename)
 
     # determine all candidate list
     start_time = time.time()
