@@ -262,12 +262,14 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
             windows_spanning_this_guideRNA = windows_spanning_this_guideRNA + spanning_windows
         estimated_copy_numbers = [window_copy_numbers[window_position] for window_position in windows_spanning_this_guideRNA]
         counted_copy_numbers = Counter(estimated_copy_numbers)
-        estimated_target_coverage = counted_copy_numbers.most_common(1)[0][0]
+        #estimated_target_coverage = counted_copy_numbers.most_common(1)[0][0]
+        estimated_target_coverage = 1.0*sum(estimated_copy_numbers)/len(estimated_copy_numbers)
         score = 1.0 * value2 / (value1 * estimated_target_coverage)
+        alt_score = 1.0 / value2
         qf = jellyfish.QueryMerFile(jellyfish_filename)
         merDNA = jellyfish.MerDNA(candidate)
         k = max(qf[merDNA], qf[jellyfish.MerDNA(reverse_complement(candidate))])
-        list_candidates.append((candidate, score, k, trie, strand_type, estimated_target_coverage))
+        list_candidates.append((candidate, score, k, trie, strand_type, estimated_target_coverage, alt_score))
         iteration_count = iteration_count + 1
         logging.info('Processed ' + str(iteration_count) + 'th gRNA: ' + candidate + ' with score= ' + str(score))
     logging.info('DONE processing all candidates! Sorting...')
