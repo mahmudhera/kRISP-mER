@@ -49,7 +49,7 @@ def generate_parser():
                              "and 3, inclusive")
 
     # optional arguments
-    parser.add_argument("-J", "jf_file", type=str, help="Jellyfish binary file (to avoid generating the file repeatedly")
+    parser.add_argument("-J", "--jf_file", type=str, help="Jellyfish binary file (to avoid generating the file repeatedly")
     parser.add_argument("-m", "--max_copy_number", type=int, help="enter the highest number of times you think a "
                                                                   "genome region may repeat. Default: 50.")
     parser.add_argument("-w", "--target_sliding_window_size", type=int, help="the size of target sliding window")
@@ -421,10 +421,12 @@ def krispmer_main(parsed_args):
 
 
 def main_func():
+    kr_start_time = time.time()
     logging.basicConfig(filename='krispmer.log', filemode='w', level=logging.INFO, format='%(message)s')
 
     args = parse_arguments()
     logging.info(args.__dict__)
+    logging.info('krispmer run initiated at' + str(kr_start_time))
 
     gRNAs = krispmer_main(args)
     logging.info('Total number of grnas: ' + str(len(gRNAs)))
@@ -448,7 +450,9 @@ def main_func():
             cmd_args = cmd.split(' ')
             subprocess.call(cmd_args)
 
-    logging.info('Exiting')
+    logging.info('Exiting\n')
+    kr_end_time = time.time()
+    logging.info('Total time needed to run: ' + str(kr_end_time-kr_start_time) + 's\n')
 
 # python krispmer.py -n ../run-data/read.fastq ../run-data/repeated_sequence.txt ../run-data/out 0
 if __name__ == '__main__':
