@@ -83,10 +83,12 @@ def parse_arguments(arg_string = None):
     parser = generate_parser()
     args_after_parsing = parser.parse_args(arg_string)
 
+    # performing sanity checks on max_hd
     if args_after_parsing.max_hd > 3 or args_after_parsing.max_hd < 0:
         logging.info('Out of range Hamming-distance value received!')
         raise ValueError('Out of range Hamming-distance value received!')
 
+    # performing sanity checks on savgol-filter window
     if args_after_parsing.savgol_filter_window is not None:
         if (args_after_parsing.savgol_filter_window % 2) == 0 or args_after_parsing.savgol_filter_window < 0:
             logging.info('Savgol-filter window size must be odd positive integer!')
