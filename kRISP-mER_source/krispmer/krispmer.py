@@ -308,26 +308,6 @@ def krispmer_main(parsed_args):
             exit(-1)
         print('File exists.')
 
-    # personalized gRNA as a string
-    start_time = time.time()
-    if parsed_args.detect_variant:
-        logging.info('Generating personalized version of the target\n')
-        print('Generating personalized version of the target\n')
-        modified_target_string = detect_variant(parsed_args.target_file, parsed_args.reads_file,
-                                                parsed_args.bt2_threads,
-                                                parsed_args.samtools_threads,
-                                                parsed_args.sort_threads,
-                                                parsed_args.pilon_threads)
-        logging.info('Personalized target identified')
-        logging.info('The target is: ' + modified_target_string)
-        print('Personalized target identified\n')
-    else:
-        modified_target_string = read_target_region(parsed_args.target_file)
-        logging.info('Proceeding with given target: ' + modified_target_string)
-        print('Proceeding with given target: ' + modified_target_string + '\n')
-    end_time = time.time()
-    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
-
     # generate k-mer spectrum histogram data
     if parsed_args.jf_histo_filename is None:
         start_time = time.time()
@@ -347,18 +327,6 @@ def krispmer_main(parsed_args):
         print('File exists. Reading the histogram.')
         logging.info('Histogram file exists. Reading the histogram.\n')
         histogram_data_dictionary = read_histogram(histo_filename)
-
-    # determine all candidate list
-    start_time = time.time()
-    print('Generating all potential candidates.\n')
-    logging.info('Generating list of potential candidates...')
-    candidates_count_dictionary = candidate_generator.get_list_of_candidates(modified_target_string, pam, grna_length,
-                                                                             parsed_args.stop,
-                                                                             parsed_args.consider_negative,
-                                                                             parsed_args.altPAMs)
-    logging.info('Finished generating list of potential candidates...\n')
-    end_time = time.time()
-    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # determine priors, posteriors and read-coverage using EM
     global read_coverage
@@ -382,6 +350,39 @@ def krispmer_main(parsed_args):
     # initialize poisson probability table
     global probability_table
     probability_table = [[-1] * max_k for i in range(max_limit_count)]  # type: List[List[int]]
+
+    # next processing are target-specific processing. until now: general
+    # personalized gRNA as a string
+    start_time = time.time()
+    if parsed_args.detect_variant:
+        logging.info('Generating personalized version of the target\n')
+        print('Generating personalized version of the target\n')
+        modified_target_string = detect_variant(parsed_args.target_file, parsed_args.reads_file,
+                                                parsed_args.bt2_threads,
+                                                parsed_args.samtools_threads,
+                                                parsed_args.sort_threads,
+                                                parsed_args.pilon_threads)
+        logging.info('Personalized target identified')
+        logging.info('The target is: ' + modified_target_string)
+        print('Personalized target identified\n')
+    else:
+        modified_target_string = read_target_region(parsed_args.target_file)
+        logging.info('Proceeding with given target: ' + modified_target_string)
+        print('Proceeding with given target: ' + modified_target_string + '\n')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
+
+    # determine all candidate list
+    start_time = time.time()
+    print('Generating all potential candidates.\n')
+    logging.info('Generating list of potential candidates...')
+    candidates_count_dictionary = candidate_generator.get_list_of_candidates(modified_target_string, pam, grna_length,
+                                                                             parsed_args.stop,
+                                                                             parsed_args.consider_negative,
+                                                                             parsed_args.altPAMs)
+    logging.info('Finished generating list of potential candidates...\n')
+    end_time = time.time()
+    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
     # perform MLE to determine target coverage
     print ('Determining copy-number of target in genome.\n')
