@@ -84,20 +84,22 @@ krispmer [-h] [-m MAX_COPY_NUMBER] [-w SAVGOL_FILTER_WINDOW] [-s] [-v]
 kRISP-mER allows you to design guide RNAs with WGS shotgun reads (in a FASTQ file), and a target-region (a FASTA file). Besides these two, you also have to tell the program the number of mismatches to consider when scanning for target sites against a particular guideRNA. kRISP-mER allows upto 3 mismatches. kRISP-mER does not consider indels (like other established gRNA designing tools). You also have to tell the program the name of the output csv file, where the guideRNAs along with their inverse-specificity scores and strand information is to be stored.
 
 ### Non-positional (optional) arguments
-1. `-h`: You can see help with `-h` flag
+1. `-J`: kRISP-meR uses Jellyfish to count the k-mers in a set of sequenced reads (in a FASTQ file). Usually, that takes time. For the same set of reads (for the same FASTQ file), if you want to make multiple runs, then Jellyfish would have to run multiple times, resulting in a huge amount of time. Instead, you can input the Jellyfish binary file using this `-J` flag.
+1. `-H`: kRISP-meR uses k-spectrum histogram from the k-mer counts and uses that histogram to calculate prior and posterior probabilities (that are used to assign scores to the guideRNAs). If you have the histogram file ready, you can input the file with `-H` flag.
+1. `-h`: You can see help with `-h` flag.
 1. `-m`: You can set the maximum number of times a region may repeat in the genome using `-m` flag. Default: 50. 
-1. `-w`: kRISP-mER uses savgol smoothing filter to smoothen the k-spectrum data before applying Expectation-Maximization to estimate read coverage. You can set the window size of the filter using `-w` flag
-1. `-s`: You can choose to exclude the guideRNAs that contain a stop-codon using the flag `-s`
+1. `-w`: kRISP-mER uses savgol smoothing filter to smoothen the k-spectrum data before applying Expectation-Maximization to estimate read coverage. You can set the window size of the filter using `-w` flag.
+1. `-s`: You can choose to exclude the guideRNAs that contain a stop-codon using the flag `-s`.
 1. `-v`: You can choose to polish the target region and personalize that for the individual whose sequenced reads are being used. You can do so using the flag `-v`. A long pipeline using bowtie2, samtools and pilon will start executing.
-1. `-n`: You can choose to scan the PAM sequences in the -ve strand using the flag `-n`
+1. `-n`: You can choose to scan the PAM sequences in the -ve strand using the flag `-n`.
 1. `-c`: You can set a cut-off score of the inverse-specificity using the flag `-c`. The guideRNAs with score higher than that will be dropped.
 1. `-a PAM1 PAM2 ...`: You can provide kRISP-mER with a list of PAMs to consider with `-a` flag. By default, NGG PAMs are considered. 
-1. `-r`: You can choose to remove the temporary files automatically using the flag `-r`
-1. `-j`: You can set the number of threads you want to use to count the k-mers in the sequenced reads using Jellyfish using the flag `-j`
-1. `-b`: You can set the number of bowtie2 threads with the flag `-b`
-1. `-S`: You can set the number of samtools threads with the flag `-S`
-1. `-B`: You can set the number of threads you want to use to sort the intermediate BAM file using the flag `-B`
-1. `-p`: You can set the number of threads to be used in Pilon using the flag `-p`
+1. `-r`: You can choose to remove the temporary files automatically using the flag `-r`.
+1. `-j`: You can set the number of threads you want to use to count the k-mers in the sequenced reads using Jellyfish using the flag `-j`.
+1. `-b`: You can set the number of bowtie2 threads with the flag `-b`.
+1. `-S`: You can set the number of samtools threads with the flag `-S`.
+1. `-B`: You can set the number of threads you want to use to sort the intermediate BAM file using the flag `-B`.
+1. `-p`: You can set the number of threads to be used in Pilon using the flag `-p`.
 
 ### Example
 ```shell script
