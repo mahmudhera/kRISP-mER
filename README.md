@@ -58,27 +58,27 @@ python setup.py install --prefix=$PREFIX
 ## Installation
 Once you have the dependencies installed, installing kRISP-meR is easy. You need to:
 1. **Download** the github repository
-1. **Go to** the directory `kRISP-mER source`
+1. **Go to** the directory `kRISP-meR source`
 1. **Install** by running the command: `python setup.py install`
 
 ## Inputs
-kRISP-mER takes as input the following:
+kRISP-meR takes as input the following:
 1. The sequenced reads as a FASTQ file
 2. The target region as a FASTA file
 
 Note that the file containing the target region should have a line `>chromosome_name` as its header.
 
 ## Running
-To run kRISP-mER, enter the following command in shell after successful installation.
+To run kRISP-meR, enter the following command in shell after successful installation.
 
 ```shell script
 krispmer READS_FILENAME TARGET_FILENAME OUTPUT_FILENAME MAX_HD
 ```
 
-Here, **MAX_HD** is the maximum Hammind distance that kRISP-mER will consider when scanning target sites for a particular guideRNA. The output of the program is saved in the **OUTPUT_FILENAME** file in csv format.
+Here, **MAX_HD** is the maximum Hammind distance that kRISP-meR will consider when scanning target sites for a particular guideRNA. The output of the program is saved in the **OUTPUT_FILENAME** file in csv format.
 
 ## Interpreting the output
-After the program exits, you will see four columns after opening the output file. The first is the guideRNA in the + strand, the second is the guideRNA in the - strand (reverse complement of the first). The third column stores the estimated inverse-specificity score assigned to a particular guideRNA. And finally, the fourth column stores the strand in which the **NGG** pam was found by kRISP-mER. 
+After the program exits, you will see four columns after opening the output file. The first is the guideRNA in the + strand, the second is the guideRNA in the - strand (reverse complement of the first). The third column stores the estimated inverse-specificity score assigned to a particular guideRNA. And finally, the fourth column stores the strand in which the **NGG** pam was found by kRISP-meR. 
 
 Besides the scores output file, you will also see a directory named `krispmer_temp` and a file named `krispmer.log`. The `krispmer_temp` directory contains the temporary files created when executing the program. You can use `-r` flag to delete them automatically (see detailed usage below). `krispmer.log` file contains detailed steps of the whole pipeline.
 
@@ -99,19 +99,19 @@ krispmer [-h] [-J JF_FILENAME] [-H JF_HISTO_FILENAME]
 1. scores_file
 1. max_hd
 
-kRISP-mER allows you to design guide RNAs with WGS shotgun reads (in a FASTQ file), and a target-region (a FASTA file). Besides these two, you also have to tell the program the number of mismatches to consider when scanning for target sites against a particular guideRNA. kRISP-mER allows upto 3 mismatches. kRISP-mER does not consider indels (like other established gRNA designing tools). You also have to tell the program the name of the output csv file, where the guideRNAs along with their inverse-specificity scores and strand information is to be stored.
+kRISP-meR allows you to design guide RNAs with WGS shotgun reads (in a FASTQ file), and a target-region (a FASTA file). Besides these two, you also have to tell the program the number of mismatches to consider when scanning for target sites against a particular guideRNA. kRISP-meR allows upto 3 mismatches. kRISP-meR does not consider indels (like other established gRNA designing tools). You also have to tell the program the name of the output csv file, where the guideRNAs along with their inverse-specificity scores and strand information is to be stored.
 
 ### Non-positional (optional) arguments
 1. `-J`: kRISP-meR uses Jellyfish to count the k-mers in a set of sequenced reads (in a FASTQ file). Usually, that takes time. For the same set of reads (for the same FASTQ file), if you want to make multiple runs, then Jellyfish would have to run multiple times, resulting in a huge amount of time. Instead, you can input the Jellyfish binary file using this `-J` flag.
 1. `-H`: kRISP-meR uses k-spectrum histogram from the k-mer counts and uses that histogram to calculate prior and posterior probabilities (that are used to assign scores to the guideRNAs). If you have the histogram file ready, you can input the file with `-H` flag.
 1. `-h`: You can see help with `-h` flag.
 1. `-m`: You can set the maximum number of times a region may repeat in the genome using `-m` flag. Default: 50. 
-1. `-w`: kRISP-mER uses savgol smoothing filter to smoothen the k-spectrum data before applying Expectation-Maximization to estimate read coverage. You can set the window size of the filter using `-w` flag.
+1. `-w`: kRISP-meR uses savgol smoothing filter to smoothen the k-spectrum data before applying Expectation-Maximization to estimate read coverage. You can set the window size of the filter using `-w` flag.
 1. `-s`: You can choose to exclude the guideRNAs that contain a stop-codon using the flag `-s`.
 1. `-v`: You can choose to polish the target region and personalize that for the individual whose sequenced reads are being used. You can do so using the flag `-v`. A long pipeline using bowtie2, samtools and pilon will start executing.
 1. `-n`: You can choose to scan the PAM sequences in the -ve strand using the flag `-n`.
 1. `-c`: You can set a cut-off score of the inverse-specificity using the flag `-c`. The guideRNAs with score higher than that will be dropped.
-1. `-a PAM1 PAM2 ...`: You can provide kRISP-mER with a list of PAMs to consider with `-a` flag. By default, NGG PAMs are considered. 
+1. `-a PAM1 PAM2 ...`: You can provide kRISP-meR with a list of PAMs to consider with `-a` flag. By default, NGG PAMs are considered. 
 1. `-r`: You can choose to remove the temporary files automatically using the flag `-r`.
 1. `-j`: You can set the number of threads you want to use to count the k-mers in the sequenced reads using Jellyfish using the flag `-j`.
 1. `-b`: You can set the number of bowtie2 threads with the flag `-b`.
