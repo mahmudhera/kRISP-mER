@@ -14,13 +14,14 @@ This tool is designed run on a Linux machine on Python2.7
 ## Dependencies
 The following need to be installed to run kRISP-meR
 * **samtools 1.0 or higher**
-[comment]: <> You can install samtools using the following commands:
+<!-- You can install samtools using the following commands:
 [comment]: <>```shell script
 [comment]: <>sudo apt-get update -y
 [comment]: <>sudo apt-get install -y samtools
-[comment]: <> ```
-* **Biopython**: install using: `pip install biopython`
-* **Python binding of Jellyfish** (gmarics project). Need SWIG 3.0 or higher. This is quite tricky. Need to assess this in detail later. Tried to do the following:
+[comment]: <> ```-->
+* **Biopython**<!--: install using: `pip install biopython`-->
+* **Jellyfish and Python binding of Jellyfish**: In a python script, the code `import dna_jellyfish` should work.
+<!--(gmarics project). Need SWIG 3.0 or higher. This is quite tricky. Need to assess this in detail later. Tried to do the following:
 ```shell script
 ./configure --prefix=$HOME --enable-python-binding --enable-swig
 make -j 4
@@ -32,13 +33,19 @@ If the installation steps mentioned above does not bind with python, (although t
 cd swig/python
 python setup.py build
 python setup.py install --prefix=$PREFIX
-```
-* **Bowtie2**: You can install this with With `Bioconda`. With `Bioconda` installed, you should be able to install Bowtie 2 with `conda install bowtie2`. Details are found here: `http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#obtaining-bowtie-2`
-* **Java 1.8 or higher**: kRISP-mER uses Pilon to find a better sequence after seq reads are aligned to a base sequence. Pilon is run as a plain jar file. In order to check this requirement, you may want to test `java -version`
-* **numpy**: Simple installation with pip: `pip install numpy`. You may also work with some package manager, such as anaconda, in which case numpy should come built in.
-* **scipy**: Simple installation with pip: `pip install scipy`. You may also work with some package manager, such as anaconda, in which case scipy should come built in.
-* **sklearn**: If the package manager you are using does not already have scikit-learn installed, you can install using `pip install scikit-learn==0.16.1` (This very specific version is important to determine on target activity scores)
-* **pickle**: This python package is required to determine on-target-activity as well. This should already be installed in python 2 and 3. If not, you need to manually install this.
+```-->
+* **Bowtie2**
+<!--: You can install this with With `Bioconda`. With `Bioconda` installed, you should be able to install Bowtie 2 with `conda install bowtie2`. Details are found here: `http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#obtaining-bowtie-2`-->
+* **Java 1.8 or higher**
+<!--: kRISP-mER uses Pilon to find a better sequence after seq reads are aligned to a base sequence. Pilon is run as a plain jar file. In order to check this requirement, you may want to test `java -version`-->
+* **numpy**
+<!--: Simple installation with pip: `pip install numpy`. You may also work with some package manager, such as anaconda, in which case numpy should come built in.-->
+* **scipy**
+<!--: Simple installation with pip: `pip install scipy`. You may also work with some package manager, such as anaconda, in which case scipy should come built in.-->
+* **sklearn**
+<!--: If the package manager you are using does not already have scikit-learn installed, you can install using `pip install scikit-learn==0.16.1` (This very specific version is important to determine on target activity scores)-->
+* **pickle**
+<!--: This python package is required to determine on-target-activity as well. This should already be installed in python 2 and 3. If not, you need to manually install this.-->
 
 ## Installation
 Once you have the dependencies installed, installing kRISP-mER is easy. You need to:
