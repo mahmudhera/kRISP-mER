@@ -4,10 +4,10 @@
 # kRISP-mER
 Reference free guide RNA designing tool for CRISPR
 
-## What kRISP-mER is
+## What kRISP-meR is
 This is a tool to generate personalized guide RNAs for CRISPR without using a reference genome. 
 
-Most genome-wide guideRNA designer tools have to use the whole reference genome to populate their database. This limits their usage for organisms with incomplete reference genome. Instead of using a reference, kRISP-mER works using the sequenced reads, and a genomic target location (location where CRISPR cleavage is intended). Using the sequenced reads only, kRISP-mER is able to design variant-aware guideRNAs and predict those with minimized off-target activity.
+Most genome-wide guideRNA designer tools have to use the whole reference genome to populate their database. This limits their usage for organisms with incomplete reference genome. Instead of using a reference, kRISP-meR works using the sequenced reads, and a genomic target location (location where CRISPR cleavage is intended). Using the sequenced reads only, kRISP-meR is able to design variant-aware guideRNAs and predict those with minimized off-target activity.
 
 This tool is designed run on a Linux machine on Python2.7
 
@@ -56,7 +56,7 @@ python setup.py install --prefix=$PREFIX
 * pandas
 
 ## Installation
-Once you have the dependencies installed, installing kRISP-mER is easy. You need to:
+Once you have the dependencies installed, installing kRISP-meR is easy. You need to:
 1. **Download** the github repository
 1. **Go to** the directory `kRISP-mER source`
 1. **Install** by running the command: `python setup.py install`
