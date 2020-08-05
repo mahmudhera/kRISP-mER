@@ -9,17 +9,16 @@ This is a tool to generate personalized guide RNAs for CRISPR without using a re
 
 Most genome-wide guideRNA designer tools have to use the whole reference genome to populate their database. This limits their usage for organisms with incomplete reference genome. Instead of using a reference, kRISP-mER works using the sequenced reads, and a genomic target location (location where CRISPR cleavage is intended). Using the sequenced reads only, kRISP-mER is able to design variant-aware guideRNAs and predict those with minimized off-target activity.
 
-This tool is designed for:
-1. Linux
-1. Python 2.7
+This tool is designed run on a Linux machine on Python2.7
 
-## Dependencies you need to install
-The following installation instructions are _only to help you out_. These installation instructions are **NOT** mandatory to follow. You can install these any way you like. However, if you are having a hard time doing so by yourself, you may find these instructions useful.
-* **samtools 1.0 or higher**: You can install samtools using the following commands:
-```shell script
-sudo apt-get update -y
-sudo apt-get install -y samtools
-```
+## Dependencies
+The following need to be installed to run kRISP-meR
+* **samtools 1.0 or higher**
+[comment]: <> You can install samtools using the following commands:
+[comment]: <>```shell script
+[comment]: <>sudo apt-get update -y
+[comment]: <>sudo apt-get install -y samtools
+[comment]: <> ```
 * **Biopython**: install using: `pip install biopython`
 * **Python binding of Jellyfish** (gmarics project). Need SWIG 3.0 or higher. This is quite tricky. Need to assess this in detail later. Tried to do the following:
 ```shell script
@@ -71,9 +70,13 @@ Besides the scores output file, you will also see a directory named `krispmer_te
 ## Detailed usage
 Usage:
 ```shell script
-krispmer [-h] [-m MAX_COPY_NUMBER] [-w SAVGOL_FILTER_WINDOW] [-s] [-v]
-                [-n] [-c CUTOFF_SCORE] [-a ALTPAMS [ALTPAMS ...]] [-r]
-                <reads_file> <target_file> <scores_file> <max_hd>
+krispmer [-h] [-J JF_FILENAME] [-H JF_HISTO_FILENAME]
+                [-m MAX_COPY_NUMBER] [-w TARGET_SLIDING_WINDOW_SIZE]
+                [-f SAVGOL_FILTER_WINDOW] [-s] [-v] [-n] [-c CUTOFF_SCORE]
+                [-a ALTPAMS [ALTPAMS ...]] [-r] [-j JF_THREADS]
+                [-b BT2_THREADS] [-S SAMTOOLS_THREADS] [-B SORT_THREADS]
+                [-p PILON_THREADS]
+                reads_file target_file scores_file max_hd
 ```
 ### Positional (mandatory) arguments
 1. reads_file
