@@ -391,11 +391,12 @@ def krispmer_main(parsed_args):
     logging.info('Starting MLE to determine copy-number of target in genome.')
     start_time = time.time()
     global target_coverage
-    k_spectrum_data_in_target, position_count_dict = generate_k_spectrum_of_target_and_count(modified_target_string, jellyfish_binary_filename,
-                                                                        max_k)
+    k_spectrum_data_in_target, position_count_dict = generate_k_spectrum_of_target_and_count(modified_target_string,
+                                                                                             jellyfish_binary_filename,
+                                                                                             max_k)
     logging.info('The k-spectrum restricted with-in the k-mers of target string:')
     logging.info(k_spectrum_data_in_target)
-    target_coverage = get_target_coverage(k_spectrum_data_in_target, read_coverage)
+    target_coverage = get_target_coverage(k_spectrum_data_in_target, read_coverage, parsed_args.max_copy_number)
     logging.info('The target is estimated_to_appear ' + str(target_coverage) + ' times')
 
     window_length = parsed_args.target_sliding_window_size
@@ -405,7 +406,9 @@ def krispmer_main(parsed_args):
     for i in range(len(modified_target_string) - window_length + 1):
         restricted_counts = [position_count_dict[key] for key in range(i,i+window_length-candidate_length+1)]
         restricted_k_spectrum_in_this_window = {k:restricted_counts.count(k) for k in restricted_counts}
-        estimated_copy_number_of_window = get_target_coverage(restricted_k_spectrum_in_this_window, read_coverage)
+        estimated_copy_number_of_window = get_target_coverage(restricted_k_spectrum_in_this_window,
+                                                              read_coverage,
+                                                              parsed_args.max_copy_number)
         window_copy_numbers[i] = estimated_copy_number_of_window
 
     logging.info(window_copy_numbers)
