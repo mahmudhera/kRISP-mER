@@ -35,7 +35,7 @@ def get_target_coverage(k_spectrum_data, read_coverage, max_priors):
             tgt_coverage = i
     return tgt_coverage
 
-def get_target_coverage_after_refining(k_spectrum_data, read_coverage):
+def get_target_coverage_after_refining(k_spectrum_data, read_coverage, max_priors):
     """
     The inversion point serves the purpose of pruning the observation of the error reads.
     :param k_spectrum_data: dictionary containing k-spectrum count histogram from target string's k-mers
@@ -45,7 +45,7 @@ def get_target_coverage_after_refining(k_spectrum_data, read_coverage):
     # seems like refining is not important. So, don't refine
     #refined_spectrum = {k:k_spectrum_data[k] for k in k_spectrum_data.keys() if k >= inversion_point}
     refined_spectrum = k_spectrum_data
-    return get_target_coverage(refined_spectrum, read_coverage)
+    return get_target_coverage(refined_spectrum, read_coverage, max_priors)
 
 if __name__=='__main__':
     dic = generate_dic_from_k_spectrum('k-spectrum3.txt')
