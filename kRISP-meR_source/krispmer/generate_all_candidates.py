@@ -3,6 +3,7 @@ __author__ = 'Mahmudur Rahman Hera'
 from Bio import trie
 
 
+# TODO: do this more efficiently
 class NFiller:
     def __init__(self, PAM):
         self.PAM = PAM
