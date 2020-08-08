@@ -16,7 +16,7 @@ def generate_dic_from_k_spectrum(filename):
     df = pd.read_csv(filename, delimiter=' ', header=None, names = ['key', 'data'])
     return pd.Series(df.data.values,index=df.key).to_dict()
 
-def get_target_coverage(k_spectrum_data, read_coverage):
+def get_target_coverage(k_spectrum_data, read_coverage, max_priors):
     """
     The # of times the target appears in the genome is estimated using the spectrum data.
     The reads in genome are modeled as a mixture of poissons, with mean = coverage, 2*coverage, 3*coverage and so on.
@@ -28,7 +28,7 @@ def get_target_coverage(k_spectrum_data, read_coverage):
     dot = np.dot(k_spectrum_data.keys(), k_spectrum_data.values())
     max_llhood = -read_coverage*sum_all_values + np.log(read_coverage)*dot
     tgt_coverage = 1
-    for i in range(2,10):
+    for i in range(2,max_priors):
         llhood = -read_coverage*sum_all_values*i + np.log(read_coverage*i)*dot
         if llhood > max_llhood:
             max_llhood = llhood
