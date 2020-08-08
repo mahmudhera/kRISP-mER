@@ -7,6 +7,7 @@ from shutil import copyfile
 from pkg_resources import resource_filename
 
 
+## TODO: use BioConda's SeqIO later
 def read_target_region(filename):
     """
     reads a fasta file and generates the target region as a string
