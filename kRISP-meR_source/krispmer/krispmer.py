@@ -15,6 +15,7 @@ import os
 import subprocess
 from collections import Counter
 import time
+from annotate_on_target import annotate_with_on_target_scores
 
 pam = "NGG"
 grna_length = 20
@@ -269,7 +270,7 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
         qf = jellyfish.QueryMerFile(jellyfish_filename)
         merDNA = jellyfish.MerDNA(candidate)
         k = max(qf[merDNA], qf[jellyfish.MerDNA(reverse_complement(candidate))])
-        list_candidates.append((candidate, score, k, trie, strand_type, estimated_target_coverage, alt_score))
+        list_candidates.append([candidate, score, k, trie, strand_type, estimated_target_coverage, alt_score])
         iteration_count = iteration_count + 1
         logging.info('Processed ' + str(iteration_count) + 'th gRNA: ' + candidate + ' with score= ' + str(score))
     logging.info('DONE processing all candidates! Sorting...')
@@ -469,6 +470,9 @@ def main_func():
             cmd = 'rm -rf krispmer_temp'
             cmd_args = cmd.split(' ')
             subprocess.call(cmd_args)
+
+    on_target_annotated_guides = annotate_with_on_target_scores(gRNAs)
+    logging.info(on_target_annotated_guides)
 
     logging.info('Exiting\n')
     kr_end_time = time.time()
