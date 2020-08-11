@@ -55,7 +55,7 @@ def generate_parser():
     parser.add_argument("-H", "--jf_histo_filename", type=str,
                         help="Jellyfish histogram filename (computed by 'jellyfish histo' command)")
     parser.add_argument("-m", "--max_copy_number", type=int, help="enter the highest number of times you think a "
-                                                                  "genome region may repeat. Default: 50.")
+                                                                  "genome region may repeat. Default: 50.", default=max_limit_count)
     parser.add_argument("-w", "--target_sliding_window_size", type=int, help="the size of target sliding window")
     parser.add_argument("-f", "--savgol_filter_window", type=int,
                         help="enter the window size of savgol filter. This must be an odd integer. Default: 9.")
@@ -438,6 +438,11 @@ def krispmer_main(parsed_args):
     print('Finished processing.')
     end_time = time.time()
     logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
+
+    on_target_annotated_guides = annotate_with_on_target_scores(list_candidates, modified_target_string)
+    for ot_annotated_guide in on_target_annotated_guides:
+        logging.info(ot_annotated_guide)
+
     return list_candidates
 
 
@@ -471,13 +476,10 @@ def main_func():
             cmd_args = cmd.split(' ')
             subprocess.call(cmd_args)
 
-    on_target_annotated_guides = annotate_with_on_target_scores(gRNAs)
-    logging.info(on_target_annotated_guides)
-
     logging.info('Exiting\n')
     kr_end_time = time.time()
     logging.info('Total time needed to run: ' + str(kr_end_time-kr_start_time) + 's\n')
 
-# python krispmer.py -n ../run-data/read.fastq ../run-data/repeated_sequence.txt ../run-data/out 0
+# krispmer -n combined.fastq staphylo-target.fasta out 0 -J krispmer_temp/jf_binary_file.jf -H krispmer_temp/k_spectrum_histo_data
 if __name__ == '__main__':
     main_func()

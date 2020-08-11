@@ -1,4 +1,13 @@
-from krispmer import reverse_complement
+def complement(seq):
+    complement_char = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+    bases = list(seq)
+    bases = [complement_char[base] for base in bases]
+    return ''.join(bases)
+
+
+def reverse_complement(s):
+    return complement(s[::-1])
+
 
 def annotate_with_on_target_scores(guideRNAs, target_string):
     reverse_target_string = reverse_complement(target_string)
