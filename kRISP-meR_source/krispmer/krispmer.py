@@ -16,6 +16,7 @@ import subprocess
 from collections import Counter
 import time
 from annotate_on_target import annotate_with_on_target_scores
+import json
 
 pam = "NGG"
 grna_length = 20
@@ -54,6 +55,10 @@ def generate_parser():
                         help="Jellyfish binary filename (to avoid generating the file repeatedly)")
     parser.add_argument("-H", "--jf_histo_filename", type=str,
                         help="Jellyfish histogram filename (computed by 'jellyfish histo' command)")
+    parser.add_argument("-eout", "--em_ouput_filename", type=str,
+                        help="EM-computed values to be written in this file")
+    parser.add_argument("-ein", "--em_input_filename", type=str,
+                        help="EM-computed values to be read from this file")
     parser.add_argument("-m", "--max_copy_number", type=int, help="enter the highest number of times you think a "
                                                                   "genome region may repeat. Default: 50.", default=max_limit_count)
     parser.add_argument("-w", "--target_sliding_window_size", type=int, help="the size of target sliding window")
@@ -123,14 +128,14 @@ def initial_jellyfish_run(reads_file_for_jellyfish, jf_threads):
     return jf_count_file
 
 
-def generate_k_spectrum_histogram(jellyfish_file, histo_output_file=hist_output):
+def generate_k_spectrum_histogram(jellyfish_filename, histo_output_file=hist_output):
     """
     generate the histogram using jellyfish command, then store the data in a dictionary and return that
     :param jellyfish_file: the jf binary file path
     :param histo_output_file: the file where you want to write the histo data
     :return: a dictionary containing the histogram information
     """
-    histo_command = 'jellyfish histo ' + jellyfish_file
+    histo_command = 'jellyfish histo ' + jellyfish_filename
     histo_command_args = histo_command.split(' ')
     res = subprocess.check_output(histo_command_args)
     with open(histo_output_file, 'w') as f:
@@ -144,7 +149,7 @@ def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file,
     k-spectrum of target, then count the k-mers found within the target, then generate the histogram
     :type max_k_limit: int
     :param target_string: the target string
-    :param jellyfish_count_file: jellyfish binary file name
+    :param jellyfish_count_file: jellyfish binary file (jellyfish.QueryMerFile)
     :param max_k_limit: max value upto which the histogram is to be generated
     :return: the histogram data in a dictionary as k_spectrum, and the counts of k-mers indexed as positions
     """
@@ -157,7 +162,8 @@ def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file,
     a = set()
     counts_in_positions = {}
     k_spectrum = {}
-    qf = jellyfish.QueryMerFile(jellyfish_count_file)
+    #qf = jellyfish.QueryMerFile(jellyfish_count_file)
+    qf = jellyfish_count_file
     for i in range(length - k + 1):
         subst = target[i:i + k]
         mer = jellyfish.MerDNA(subst)
@@ -231,7 +237,8 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
                 cp = get_score(candidate, mer)
             else:
                 cp = get_score(reverse_complement(candidate), reverse_complement(mer))
-            qf = jellyfish.QueryMerFile(jellyfish_filename)
+            #qf = jellyfish.QueryMerFile(jellyfish_filename)
+            qf = jellyfish_filename
             merDNA = jellyfish.MerDNA(mer)
             merDNA.canonicalize()
             k = qf[merDNA]
@@ -255,16 +262,15 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
         # following other reference based tools: the target appears only once
         score = 1.0 * value2 / value1
         alt_score = 1.0 / value2
-        qf = jellyfish.QueryMerFile(jellyfish_filename)
+        #qf = jellyfish.QueryMerFile(jellyfish_filename)
+        qf = jellyfish_filename
         merDNA = jellyfish.MerDNA(candidate)
         merDNA.canonicalize()
         k = qf[merDNA]
-        # todo: append another score
-        list_candidates.append([candidate, score, k, trie, strand_type, alt_score])
+        list_candidates.append([candidate, score, k, trie, strand_type, alt_score, value2])
         iteration_count = iteration_count + 1
         logging.info('Processed ' + str(iteration_count) + 'th gRNA: ' + candidate + ' with score= ' + str(score))
 
-    #todo: add argument to sort using this or that
     logging.info('DONE processing all candidates! Sorting...')
     list_candidates.sort(key=sort_second)
 
@@ -290,6 +296,7 @@ def krispmer_main(parsed_args):
               ' k-mers in reads (may take some time).')
         logging.info('No jf file given. Doing an initial run of Jellyfish to count k-mers in reads.')
         jellyfish_binary_filename = initial_jellyfish_run(parsed_args.reads_file, parsed_args.jf_threads)
+        jellyfish_query_mer_file = jellyfish.QueryMerFile(jellyfish_binary_filename)
         logging.info('Completed the initial run.\n')
         print('Completed the run successfully.\n')
         end_time = time.time()
@@ -303,6 +310,7 @@ def krispmer_main(parsed_args):
             logging.info('The Jellyfish binary file does not exist. Exiting...')
             exit(-1)
         print('File exists.')
+        jellyfish_query_mer_file = jellyfish.QueryMerFile(jellyfish_binary_filename)
 
     # generate k-mer spectrum histogram data
     if parsed_args.jf_histo_filename is None:
@@ -325,25 +333,41 @@ def krispmer_main(parsed_args):
         histogram_data_dictionary = read_histogram(histo_filename)
 
     # determine priors, posteriors and read-coverage using EM
-    # todo: add an argument: choose to input EM file. If yes, then read from that file.
-    # todo: add another argument: choose to store EM outputs.
+    # if these already available in a file, then do not do EM
     global read_coverage
     global max_limit_count
     global savgol_filter_window
+    global max_k
     if parsed_args.max_copy_number is not None:
         max_limit_count = parsed_args.max_copy_number
     if parsed_args.savgol_filter_window is not None:
         savgol_filter_window = parsed_args.savgol_filter_window
-    print('Calculating priors using EM (may take some time).')
-    logging.info('Calculating priors...')
-    start_time = time.time()
-    priors, posteriors, read_coverage = determine_priors_posteriors(histogram_data_dictionary,
+
+    if parsed_args.em_input_filename is not None:
+        print('EM-computed values in file: ' + parsed_args.em_input_filename + ', no need to run EM.')
+        logging.info('EM-computed values in file: ' + parsed_args.em_input_filename)
+        logging.info('Skipping EM.')
+
+        json_file = open(parsed_args.em_input_filename, 'r')
+        v = json.loads(json.load(json_file))
+        priors, posteriors, read_coverage, max_k = v[0], v[1], v[2], v[3]
+        json_file.close()
+
+    else:
+        print('Calculating priors using EM (may take some time).')
+        logging.info('Calculating priors...')
+        start_time = time.time()
+        priors, posteriors, read_coverage = determine_priors_posteriors(histogram_data_dictionary,
                                                                     max_limit_count, savgol_filter_window)
-    global max_k
-    max_k = len(posteriors)
-    logging.info('Finished calculating priors and posteriors\n')
-    end_time = time.time()
-    logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
+        max_k = len(posteriors)
+        logging.info('Finished calculating priors and posteriors\n')
+        end_time = time.time()
+        logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
+
+    if parsed_args.em_ouput_filename is not None:
+        json_file = open(parsed_args.em_ouput_filename, 'w')
+        json.dump(json.dumps([priors.tolist(), posteriors, read_coverage, max_k]), json_file)
+        json_file.close()
 
     # initialize poisson probability table
     global probability_table
@@ -388,7 +412,7 @@ def krispmer_main(parsed_args):
     start_time = time.time()
     global target_coverage
     k_spectrum_data_in_target, position_count_dict = generate_k_spectrum_of_target_and_count(modified_target_string,
-                                                                                             jellyfish_binary_filename,
+                                                                                             jellyfish_query_mer_file,
                                                                                              max_k)
     logging.info('The k-spectrum restricted with-in the k-mers of target string:')
     logging.info(k_spectrum_data_in_target)
@@ -426,7 +450,7 @@ def krispmer_main(parsed_args):
     # todo: no need of window_copy_numbers now
     list_candidates = annotate_guides_with_score(candidates_count_dictionary,
                                                  window_copy_numbers,
-                                                 jellyfish_binary_filename,
+                                                 jellyfish_query_mer_file,
                                                  priors,
                                                  posteriors,
                                                  parsed_args.max_hd,
