@@ -29,6 +29,7 @@ hist_output = 'krispmer_temp/k_spectrum_histo_data'
 read_coverage = -1
 target_coverage = -1
 default_sliding_window_length = 30
+# todo: wherever reverse_complement is used, use "cannonicalize"
 
 
 def generate_parser():
@@ -252,6 +253,7 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
             value2 = value2 + cp * accum
         if value1 <= 0.0 or flag is False:
             continue
+        # todo: starting analysis from here
         guideRNA_positions_in_target = candidates_count_dictionary[candidate][1:]
         # do math to figure out why the windows spanning a gRNA starting at position n are n+23-w:n
         # hint: w-sized window, 23 sized seq, w-22 windows will fit this
@@ -265,16 +267,21 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
         counted_copy_numbers = Counter(estimated_copy_numbers)
         #estimated_target_coverage = counted_copy_numbers.most_common(1)[0][0]
         estimated_target_coverage = 1.0*sum(estimated_copy_numbers)/len(estimated_copy_numbers)
+        # todo: ending analysis here. No need of these. Just remove estimated_target_coverage
         score = 1.0 * value2 / (value1 * estimated_target_coverage)
         alt_score = 1.0 / value2
         qf = jellyfish.QueryMerFile(jellyfish_filename)
         merDNA = jellyfish.MerDNA(candidate)
         k = max(qf[merDNA], qf[jellyfish.MerDNA(reverse_complement(candidate))])
+        # todo: append another score
         list_candidates.append([candidate, score, k, trie, strand_type, estimated_target_coverage, alt_score])
         iteration_count = iteration_count + 1
         logging.info('Processed ' + str(iteration_count) + 'th gRNA: ' + candidate + ' with score= ' + str(score))
+
+    #todo: add argument to sort using this or that
     logging.info('DONE processing all candidates! Sorting...')
     list_candidates.sort(key=sort_second)
+
     logging.info('Final list:')
     for annotated_candidate in list_candidates:
         logging.info(annotated_candidate)
@@ -332,6 +339,8 @@ def krispmer_main(parsed_args):
         histogram_data_dictionary = read_histogram(histo_filename)
 
     # determine priors, posteriors and read-coverage using EM
+    # todo: add an argument: choose to input EM file. If yes, then read from that file.
+    # todo: add another argument: choose to store EM outputs.
     global read_coverage
     global max_limit_count
     global savgol_filter_window
@@ -399,6 +408,9 @@ def krispmer_main(parsed_args):
     logging.info(k_spectrum_data_in_target)
     target_coverage = get_target_coverage(k_spectrum_data_in_target, read_coverage, parsed_args.max_copy_number)
     logging.info('The target is estimated_to_appear ' + str(target_coverage) + ' times')
+    if int(target_coverage) > 1:
+        logging.info('Warning: the target string may be a segmental-duplication region')
+        print('Warning: the target string may be a segmental-duplication region')
 
     window_length = parsed_args.target_sliding_window_size
     if window_length is None:
@@ -415,11 +427,13 @@ def krispmer_main(parsed_args):
     logging.info(window_copy_numbers)
     end_time = time.time()
     logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
+    # todo if variance too much, then throw another warning
 
     # annotate all guides
     print('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs\n')
     logging.info('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs')
     start_time = time.time()
+    # todo: no need of window_copy_numbers now
     list_candidates = annotate_guides_with_score(candidates_count_dictionary,
                                                  window_copy_numbers,
                                                  jellyfish_binary_filename,

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 def generate_dic_from_k_spectrum(filename):
     """
     Given the filename, generates the dictionary of key values.
@@ -15,6 +16,7 @@ def generate_dic_from_k_spectrum(filename):
     """
     df = pd.read_csv(filename, delimiter=' ', header=None, names = ['key', 'data'])
     return pd.Series(df.data.values,index=df.key).to_dict()
+
 
 def get_target_coverage(k_spectrum_data, read_coverage, max_priors):
     """
@@ -35,6 +37,7 @@ def get_target_coverage(k_spectrum_data, read_coverage, max_priors):
             tgt_coverage = i
     return tgt_coverage
 
+
 def get_target_coverage_after_refining(k_spectrum_data, read_coverage, max_priors):
     """
     The inversion point serves the purpose of pruning the observation of the error reads.
@@ -46,6 +49,7 @@ def get_target_coverage_after_refining(k_spectrum_data, read_coverage, max_prior
     #refined_spectrum = {k:k_spectrum_data[k] for k in k_spectrum_data.keys() if k >= inversion_point}
     refined_spectrum = k_spectrum_data
     return get_target_coverage(refined_spectrum, read_coverage, max_priors)
+
 
 if __name__=='__main__':
     dic = generate_dic_from_k_spectrum('k-spectrum3.txt')
