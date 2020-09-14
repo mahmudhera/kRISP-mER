@@ -29,7 +29,6 @@ hist_output = 'krispmer_temp/k_spectrum_histo_data'
 read_coverage = -1
 target_coverage = -1
 default_sliding_window_length = 30
-# todo: wherever reverse_complement is used, use "cannonicalize"
 
 
 def generate_parser():
@@ -162,8 +161,8 @@ def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file,
     for i in range(length - k + 1):
         subst = target[i:i + k]
         mer = jellyfish.MerDNA(subst)
-        rev_mer = jellyfish.MerDNA(reverse_complement(subst))
-        count = max(qf[mer], qf[rev_mer])
+        mer.canonicalize()
+        count = qf[mer]
         counts_in_positions[i] = count
         if count == 0:
             logging.info("Count = 0 for substring " + subst)
@@ -234,8 +233,8 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
                 cp = get_score(reverse_complement(candidate), reverse_complement(mer))
             qf = jellyfish.QueryMerFile(jellyfish_filename)
             merDNA = jellyfish.MerDNA(mer)
-            rev_comp_merDNA = jellyfish.MerDNA(reverse_complement(mer))
-            k = max(qf[merDNA], qf[rev_comp_merDNA])
+            merDNA.canonicalize()
+            k = qf[merDNA]
             if k <= 0:
                 continue
             if k >= max_k:
@@ -253,28 +252,15 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
             value2 = value2 + cp * accum
         if value1 <= 0.0 or flag is False:
             continue
-        # todo: starting analysis from here
-        guideRNA_positions_in_target = candidates_count_dictionary[candidate][1:]
-        # do math to figure out why the windows spanning a gRNA starting at position n are n+23-w:n
-        # hint: w-sized window, 23 sized seq, w-22 windows will fit this
-        windows_spanning_this_guideRNA = []
-        for guideRNA_position in guideRNA_positions_in_target:
-            lower = max(0, guideRNA_position+candidate_length-window_size)
-            upper = min(guideRNA_position+candidate_length-1, target_length-window_size)
-            spanning_windows = range(lower, upper+1)
-            windows_spanning_this_guideRNA = windows_spanning_this_guideRNA + spanning_windows
-        estimated_copy_numbers = [window_copy_numbers[window_position] for window_position in windows_spanning_this_guideRNA]
-        counted_copy_numbers = Counter(estimated_copy_numbers)
-        #estimated_target_coverage = counted_copy_numbers.most_common(1)[0][0]
-        estimated_target_coverage = 1.0*sum(estimated_copy_numbers)/len(estimated_copy_numbers)
-        # todo: ending analysis here. No need of these. Just remove estimated_target_coverage
-        score = 1.0 * value2 / (value1 * estimated_target_coverage)
+        # following other reference based tools: the target appears only once
+        score = 1.0 * value2 / value1
         alt_score = 1.0 / value2
         qf = jellyfish.QueryMerFile(jellyfish_filename)
         merDNA = jellyfish.MerDNA(candidate)
-        k = max(qf[merDNA], qf[jellyfish.MerDNA(reverse_complement(candidate))])
+        merDNA.canonicalize()
+        k = qf[merDNA]
         # todo: append another score
-        list_candidates.append([candidate, score, k, trie, strand_type, estimated_target_coverage, alt_score])
+        list_candidates.append([candidate, score, k, trie, strand_type, alt_score])
         iteration_count = iteration_count + 1
         logging.info('Processed ' + str(iteration_count) + 'th gRNA: ' + candidate + ' with score= ' + str(score))
 
@@ -427,7 +413,11 @@ def krispmer_main(parsed_args):
     logging.info(window_copy_numbers)
     end_time = time.time()
     logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
-    # todo if variance too much, then throw another warning
+    # if variance too much, then throw another warning
+    variance = np.var(window_copy_numbers.values())
+    if variance > 1.0:
+        logging.info('Warning: copy-numbers of target k-mers have high variation. The target may not be unique')
+        print('Warning: copy-numbers of target k-mers have high variation. The target may not be unique')
 
     # annotate all guides
     print('Processing total ' + str(len(list(candidates_count_dictionary.keys()))) + ' candidate gRNAs\n')
