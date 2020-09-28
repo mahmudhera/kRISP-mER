@@ -257,6 +257,7 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
                 accum = accum + new_val
             value1 = value1 + cp * p
             value2 = value2 + cp * accum
+            logging.info(str(mer) + ',' + str(strand_type) + ',' + str(k) + ',' + str(cp) + ',' + str(p) + ',' + str(accum) + ',' + str(cp*p) + ',' + str(cp*accum))
         if value1 <= 0.0 or flag is False:
             continue
         # following other reference based tools: the target appears only once
