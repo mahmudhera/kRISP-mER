@@ -1,9 +1,10 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
+triemodule = Extension('trie', sources = ['trie/triemodule.c', 'trie/trie.c'])
 
 setup(
     name = 'krispmer',
-    version = '0.0.5',
+    version = '0.0.6',
     author= 'Mahmudur Rahman Hera',
     author_email= 'mahmudhera93@gmail.com',
     description = 'A tool to design CRISPR guideRNA without using reference genome',
@@ -12,6 +13,7 @@ setup(
     #    'biopython>=1.66','pysam==0.8.3','pyfaidx==0.4.7.1','bx-python==0.7.3'
     #],
     packages = find_packages(),
+    ext_modules = [triemodule],
     package_data = {'krispmer' : ['pilon-1.23.jar',
                                   'CFD_scoring/mismatch_score.pkl',
                                   'CFD_scoring/pam_scores.pkl',

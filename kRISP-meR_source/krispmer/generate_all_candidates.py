@@ -1,6 +1,6 @@
 __author__ = 'Mahmudur Rahman Hera'
 
-from Bio import trie
+import trie
 
 
 # TODO: do this more efficiently
