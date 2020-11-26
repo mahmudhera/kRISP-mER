@@ -80,6 +80,10 @@ def generate_parser():
     parser.add_argument("-B", "--sort_threads", type=int, help="Number of threads you want to sort bam file (default: "
                                                                "16)", default=16)
     parser.add_argument("-p", "--pilon_threads", type=int, help="Number of pilon threads you want (default: 32)", default=32)
+
+    parser.add_argument("-l", "--logfilename", type=str,
+                        help="Name of the log file", default="krispmer_log.log")
+
     return parser
 
 
@@ -89,7 +93,6 @@ def parse_arguments(arg_string = None):
     :return: the parsed argument
     """
     print('Parsing arguments...')
-    logging.info('Parsing the passed arguments...')
     parser = generate_parser()
     args_after_parsing = parser.parse_args(arg_string)
 
@@ -104,7 +107,6 @@ def parse_arguments(arg_string = None):
             logging.info('Savgol-filter window size must be odd positive integer!')
             raise ValueError('Savgol-filter window size must be odd positive integer!')
 
-    logging.info('Finished parsing the arguments.\n')
     print('Parsing successful!\n')
     return args_after_parsing
 
@@ -476,10 +478,10 @@ def krispmer_main(parsed_args):
 
 
 def main_func():
-    kr_start_time = time.time()
-    logging.basicConfig(filename='krispmer.log', filemode='w', level=logging.INFO, format='%(message)s')
-
     args = parse_arguments()
+    kr_start_time = time.time()
+    print(args.logfilename)
+    logging.basicConfig(filename=args.logfilename, filemode='w', level=logging.INFO, format='%(message)s')
     logging.info(args.__dict__)
     logging.info('krispmer run initiated at' + str(kr_start_time))
 
