@@ -17,6 +17,7 @@ from collections import Counter
 import time
 from annotate_on_target import annotate_with_on_target_scores
 import json
+from multiprocessing import Process, Array
 
 pam = "NGG"
 grna_length = 20
@@ -83,7 +84,8 @@ def generate_parser():
 
     parser.add_argument("-l", "--logfilename", type=str,
                         help="Name of the log file", default="krispmer_log.log")
-
+    parser.add_argument("-k", "--krispmer_threads", type=int, help="Number of threads you want to process grnas (default: 32)",
+                        default=32)
     return parser
 
 
@@ -224,22 +226,25 @@ def get_probability(count, k):
     return probability_table[count][k]
 
 
-def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers, jellyfish_filename, priors,
-                               posteriors, max_hd, target_string, target_coverage, window_size, target_length):
-    iteration_count = 0
+"""
+return list should have the same number of elements as candidates_count_dictionary keys
+"""
+def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_filename, priors, posteriors,
+                                        max_hd,
+                                        target_string,
+                                        return_list):
+    index = 0
     list_candidates = []
     for candidate in list(candidates_count_dictionary.keys()):
         strand_type = candidates_count_dictionary[candidate][0]
         trie = generate_adjacent_mers(candidate, max_hd)
         value1 = value2 = 0.0
-        logging.info('Processing candidate ' + candidate + '...')
         flag = True
         for mer in trie.keys():
             if strand_type == '+':
                 cp = get_score(candidate, mer)
             else:
                 cp = get_score(reverse_complement(candidate), reverse_complement(mer))
-            #qf = jellyfish.QueryMerFile(jellyfish_filename)
             qf = jellyfish_filename
             merDNA = jellyfish.MerDNA(mer)
             merDNA.canonicalize()
@@ -259,28 +264,50 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
                 accum = accum + new_val
             value1 = value1 + cp * p
             value2 = value2 + cp * accum
-            logging.info(str(mer) + ',' + str(strand_type) + ',' + str(k) + ',' + str(cp) + ',' + str(p) + ',' + str(accum) + ',' + str(cp*p) + ',' + str(cp*accum))
         if value1 <= 0.0 or flag is False:
             continue
-        # following other reference based tools: the target appears only once
         score = 1.0 * value2 / value1
-        alt_score = 1.0 / value2
-        #qf = jellyfish.QueryMerFile(jellyfish_filename)
-        qf = jellyfish_filename
-        merDNA = jellyfish.MerDNA(candidate)
-        merDNA.canonicalize()
-        k = qf[merDNA]
-        list_candidates.append([candidate, score, k, trie, strand_type, alt_score, value2])
-        iteration_count = iteration_count + 1
-        logging.info('Processed ' + str(iteration_count) + 'th gRNA: ' + candidate + ' with score= ' + str(score))
+        return_list[index] = score
+        index = index + 1
+
+
+def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers, jellyfish_filename, priors,
+                               posteriors, max_hd, target_string, target_coverage, window_size, target_length, num_threads):
+    candidates = list(candidates_count_dictionary.keys())
+    candidates_per_thread = len(candidates) / num_threads
+    return_lists = []
+    process_list = []
+    for i in range(num_threads):
+        low_index = i * candidates_per_thread
+        high_index = min(low_index + candidates_per_thread, len(candidates))
+        candidates_count_dictionary_thread = {k:candidates_count_dictionary[k] for k in candidates[low_index:high_index]}
+        return_list_this_thread = Array('d', len(list(candidates_count_dictionary_thread.keys())) * [-1.0])
+        return_lists.append(return_list_this_thread)
+
+        p = Process(target=annotate_guides_with_score_parallel, args=(candidates_count_dictionary_thread,
+                                                                      jellyfish_filename, priors, posteriors, max_hd,
+                                                                      target_string, return_list_this_thread))
+        process_list.append(p)
+        p.start()
+
+    for process in process_list:
+        process.join()
+
+    all_scores = []
+    for return_list in return_lists:
+        all_scores = all_scores + list(return_list)
+
+    annotated_candidates = []
+    for (candidate, score) in list(zip(candidates, all_scores)):
+        annotated_candidates.append([candidate, score, -1, None, candidates_count_dictionary[candidate][0], -1, -1])
 
     logging.info('DONE processing all candidates! Sorting...')
-    list_candidates.sort(key=sort_second)
+    annotated_candidates.sort(key=sort_second)
 
     logging.info('Final list:')
-    for annotated_candidate in list_candidates:
+    for annotated_candidate in annotated_candidates:
         logging.info(annotated_candidate)
-    return list_candidates
+    return annotated_candidates
 
 
 def krispmer_main(parsed_args):
@@ -460,7 +487,8 @@ def krispmer_main(parsed_args):
                                                  modified_target_string,
                                                  target_coverage,
                                                  window_length,
-                                                 len(modified_target_string))
+                                                 len(modified_target_string),
+                                                 parsed_args.krispmer_threads)
 
     # filter guides using cut-off score
     if parsed_args.cutoff_score is not None:
