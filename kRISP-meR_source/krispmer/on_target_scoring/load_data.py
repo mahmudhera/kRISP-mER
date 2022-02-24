@@ -1,5 +1,5 @@
 import pandas
-import util
+from . import util
 import matplotlib.pyplot as plt
 import scipy as sp
 import scipy.stats
@@ -7,7 +7,7 @@ import numpy as np
 
 def from_custom_file(data_file, learn_options):
     # use semantics of when we load V2 data
-    print "Loading inputs to predict from %s" % data_file        
+    print("Loading inputs to predict from %s" % data_file)        
     data = pandas.read_csv(data_file) 
            
     mandatory_columns = ['30mer', 'Target gene', 'Percent Peptide', 'Amino Acid Cut position']
@@ -34,7 +34,7 @@ def from_custom_file(data_file, learn_options):
 def from_file(data_file, learn_options, data_file2=None):
     if learn_options["V"] == 1:  # from Nature Biotech paper
 
-        print "loading V%d data" % learn_options["V"]
+        print("loading V%d data" % learn_options["V"])
 
         assert not learn_options["weighted"] is not None, "not supported for V1 data"
         annotations, gene_position, target_genes, Xdf, Y = read_V1_data(data_file, learn_options)
@@ -72,9 +72,9 @@ def from_file(data_file, learn_options, data_file2=None):
 
 
 def set_V2_target_names(learn_options):
-    if 'binary target name' not in learn_options.keys():
+    if 'binary target name' not in list(learn_options.keys()):
         learn_options['binary target name'] = 'score_drug_gene_threshold'
-    if 'rank-transformed target name' not in learn_options.keys():
+    if 'rank-transformed target name' not in list(learn_options.keys()):
         learn_options['rank-transformed target name'] = 'score_drug_gene_rank'
     learn_options['raw target name'] = 'score'
     return learn_options
@@ -131,12 +131,12 @@ def read_V1_data(data_file, learn_options):
     assert Xdf.index.equals(Y.index), "The index of Xdf is different from the index of Y (this can cause inconsistencies/random performance later on)"
 
     if learn_options is not None and learn_options["flipV1target"]:
-        print "************************************************************************"
-        print "*****************MATCHING DOENCH CODE (DEBUG MODE)**********************"
-        print "************************************************************************"
+        print("************************************************************************")
+        print("*****************MATCHING DOENCH CODE (DEBUG MODE)**********************")
+        print("************************************************************************")
         # normally it is: Y['average threshold'] = Y['average rank'] > 0.8, where 1s are good guides, 0s are not
         Y['average threshold'] = Y['average rank'] < 0.2  # 1s are bad guides
-        print "press c to continue"
+        print("press c to continue")
         import ipdb
         ipdb.set_trace()
 
@@ -151,7 +151,7 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
     # import predict as pr; a1, g1, t1, X1, Y1 = pr.data_setup()
     # a1.index.names
 
-    data = pandas.read_excel(data_file, sheetname="ResultsFiltered", skiprows=range(0, 6+1), index_col=[0, 4])
+    data = pandas.read_excel(data_file, sheetname="ResultsFiltered", skiprows=list(range(0, 6+1)), index_col=[0, 4])
     # grab data relevant to each of three drugs, which exludes some genes
     # note gene MED12 has two drugs, all others have at most one
     Xdf = pandas.DataFrame()
@@ -177,7 +177,7 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
             drugs_to_genes['6TG_2ug/mL'].extend(['CCDC101', 'MED12', 'TADA2B', 'TADA1', 'CUL3', 'NF1', 'NF2'])
 
     count = 0
-    for drug in drugs_to_genes.keys():
+    for drug in list(drugs_to_genes.keys()):
         genes = drugs_to_genes[drug]
         for g in genes:
             Xtmp = data.copy().xs(g, level='Target gene', drop_level=False)
@@ -192,7 +192,7 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
             count = count + Xtmp.shape[0]
             Xdf = pandas.concat([Xdf, Xtmp], axis=0)
             if verbose:
-                print "Loaded %d samples for gene %s \ttotal number of samples: %d" % (Xtmp.shape[0], g, count)
+                print("Loaded %d samples for gene %s \ttotal number of samples: %d" % (Xtmp.shape[0], g, count))
 
     # create new index that includes the drug
     Xdf = Xdf.set_index('drug', append=True)
@@ -211,7 +211,7 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
     y_rank = pandas.DataFrame()
     y_threshold = pandas.DataFrame()
     y_quant = pandas.DataFrame()
-    for drug in drugs_to_genes.keys():
+    for drug in list(drugs_to_genes.keys()):
         gene_list = drugs_to_genes[drug]
         for gene in gene_list:
             ytmp = pandas.DataFrame(Y.xs((gene, drug), level=["Target gene", "drug"], drop_level=False)['score'])
@@ -228,7 +228,7 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
     y_rank = pandas.DataFrame()
     y_threshold = pandas.DataFrame()
     y_quant = pandas.DataFrame()
-    for drug in drugs_to_genes.keys():
+    for drug in list(drugs_to_genes.keys()):
         ytmp = pandas.DataFrame(Y.xs(drug, level="drug", drop_level=False)['score'])
         y_ranktmp, y_rank_raw, y_thresholdtmp, y_quanttmp = util.get_ranks(ytmp, thresh=0.8, prefix="score_drug", flip=False)
         # np.unique(y_rank.values-y_rank_raw.values)
@@ -255,9 +255,9 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
     gene_position = util.impute_gene_position(gene_position)
 
     if learn_options is not None and learn_options["weighted"] == "variance":
-        print "computing weights from replicate variance..."
+        print("computing weights from replicate variance...")
         # compute the variance across replicates so can use it as a weight
-        data = pandas.read_excel(data_file, sheetname="Normalized", skiprows=range(0, 6+1), index_col=[0, 4])
+        data = pandas.read_excel(data_file, sheetname="Normalized", skiprows=list(range(0, 6+1)), index_col=[0, 4])
         data.index.names = ["Sequence", "Target gene"]
 
         experiments = {}
@@ -266,7 +266,7 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
         experiments['PLX_2uM'] = ['Deep 49', 'Deep 51', 'Deep 53', 'Deep 55']
 
         variance = None
-        for drug in drugs_to_genes.keys():
+        for drug in list(drugs_to_genes.keys()):
             data_tmp = data.iloc[data.index.get_level_values('Target gene').isin(drugs_to_genes[drug])][experiments[drug]]
             data_tmp["drug"] = drug
             data_tmp = data_tmp.set_index('drug', append=True)
@@ -279,7 +279,7 @@ def read_V2_data(data_file, learn_options=None, verbose=True):
         orig_index = Y.index.copy()
         Y = pandas.merge(Y, pandas.DataFrame(variance), how="inner", left_index=True, right_index=True)
         Y = Y.ix[orig_index]
-        print "done."
+        print("done.")
 
     # Make sure to keep this check last in this function
     assert Xdf.index.equals(Y.index), "The index of Xdf is different from the index of Y (this can cause inconsistencies/random performance later on)"
@@ -320,7 +320,7 @@ def mergeV1_V2(data_file, data_file2, learn_options):
     gene_position1["drug"] = ["nodrug" for x in range(gene_position1.shape[0])]
     gene_position1 = gene_position1.set_index('drug', append=True)
     gene_position1.index.names = ['Sequence', 'Target gene', 'drug']
-    cols_to_keep = [u'Percent Peptide', u'Amino Acid Cut position']
+    cols_to_keep = ['Percent Peptide', 'Amino Acid Cut position']
     gene_position1 = gene_position1[cols_to_keep]
     gene_position2 = gene_position2[cols_to_keep]
 

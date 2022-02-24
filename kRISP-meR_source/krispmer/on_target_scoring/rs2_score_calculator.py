@@ -7,7 +7,7 @@
 import pandas as pd
 import csv, argparse, sys
 import pickle
-import model_comparison
+from . import model_comparison
 from pkg_resources import resource_filename
 
 
@@ -67,6 +67,6 @@ if __name__ == '__main__':
         raise Exception("could not find model stored to file %s" % model_file)
     if seq[25:27] == 'GG':
         score = model_comparison.predict(seq, aa_cut, per_peptide, model=model)
-        print('Rule set 2 score: %.4f' % (score))
+        print(('Rule set 2 score: %.4f' % (score)))
     else:
         print('Calculates on-target scores for sgRNAs with NGG PAM only.')

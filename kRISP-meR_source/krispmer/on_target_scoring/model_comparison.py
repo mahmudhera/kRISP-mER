@@ -1,19 +1,19 @@
-import predict as pd
+from . import predict as pd
 import copy
 import os
 import numpy as np
-import util
+from . import util
 import shutil
 import pickle
 import pylab as plt
 import pandas
-import local_multiprocessing
-import load_data
-import featurization as feat
+from . import local_multiprocessing
+from . import load_data
+from . import featurization as feat
 
 def check_feature_set_dims(feature_sets):
     F2 = None
-    for set in feature_sets.keys():
+    for set in list(feature_sets.keys()):
         F = feature_sets[set].shape[0]
         if F2 is None: F = F2
         assert F == F2, "not same # individuals for feature %s" % set
@@ -22,7 +22,7 @@ def check_feature_set_dims(feature_sets):
 
 
 def set_target(learn_options, classification):
-    assert 'target_name' not in learn_options.keys() or learn_options['target_name'] is not None, "changed it to be automatically set here"
+    assert 'target_name' not in list(learn_options.keys()) or learn_options['target_name'] is not None, "changed it to be automatically set here"
     if not classification:
         learn_options["target_name"] = learn_options['rank-transformed target name']
         learn_options["training_metric"] = 'spearmanr'
@@ -144,9 +144,9 @@ def adaboost_setup(learn_options, num_estimators=100, max_depth=3, learning_rate
     learn_options['method'] = "AdaBoostRegressor"
     learn_options['adaboost_version'] = 'python' # "R" or "python"
 
-    if 'adaboost_loss' not in learn_options.keys():
+    if 'adaboost_loss' not in list(learn_options.keys()):
         learn_options['adaboost_loss'] = 'ls' # alternatives: "lad", "huber", "quantile", see scikit docs for details
-    if 'adaboost_alpha' not in learn_options.keys():
+    if 'adaboost_alpha' not in list(learn_options.keys()):
         learn_options['adaboost_alpha'] = 0.5 # this parameter is only used by the huber and quantile loss functions.
 
     if not CV:
@@ -163,9 +163,9 @@ def adaboost_setup(learn_options, num_estimators=100, max_depth=3, learning_rate
 
 def setup(test=False, order=1, learn_options=None, data_file=None):
 
-    if 'num_proc' not in learn_options.keys():
+    if 'num_proc' not in list(learn_options.keys()):
         learn_options['num_proc'] = None
-    if 'num_thread_per_proc' not in learn_options.keys():
+    if 'num_thread_per_proc' not in list(learn_options.keys()):
         learn_options['num_thread_per_proc'] = None
 
     num_proc = local_multiprocessing.configure(TEST=test, num_proc=learn_options["num_proc"], 
@@ -174,35 +174,35 @@ def setup(test=False, order=1, learn_options=None, data_file=None):
 
     learn_options["order"] = order  # gets used many places in code, not just here
 
-    if "cv" not in learn_options.keys():
+    if "cv" not in list(learn_options.keys()):
         # if no CV preference is specified, use leave-one-gene-out
         learn_options["cv"] = "gene"
 
-    if "normalize_features" not in learn_options.keys():
+    if "normalize_features" not in list(learn_options.keys()):
         # if no CV preference is specified, use leave-one-gene-out
         learn_options["normalize_features"] = True
 
-    if "weighted" not in learn_options.keys():
+    if "weighted" not in list(learn_options.keys()):
         learn_options['weighted'] = None
 
-    if "all pairs" not in learn_options.keys():
+    if "all pairs" not in list(learn_options.keys()):
         learn_options["all pairs"] = False
 
-    if "include_known_pairs" not in learn_options.keys():
+    if "include_known_pairs" not in list(learn_options.keys()):
         learn_options["include_known_pairs"] = False
 
-    if "include_gene_guide_feature" not in learn_options.keys():
+    if "include_gene_guide_feature" not in list(learn_options.keys()):
         learn_options["include_gene_guide_feature"] = 0 #used as window size, so 0 is none
 
     #these should default to true to match experiments before they were options:
-    if "gc_features" not in learn_options.keys():
+    if "gc_features" not in list(learn_options.keys()):
         learn_options["gc_features"] = True
-    if "nuc_features" not in learn_options.keys():
+    if "nuc_features" not in list(learn_options.keys()):
         learn_options["nuc_features"] = True
 
-    if 'train_genes' not in learn_options.keys():
+    if 'train_genes' not in list(learn_options.keys()):
         learn_options["train_genes"] = None
-    if 'test_genes' not in learn_options.keys():
+    if 'test_genes' not in list(learn_options.keys()):
         learn_options["test_genes"] = None
 
     if "num_proc" not in learn_options:
@@ -223,7 +223,7 @@ def setup(test=False, order=1, learn_options=None, data_file=None):
         learn_options["include_microhomology"] = False
 
 
-    assert "testing_non_binary_target_name" in learn_options.keys(), "need this in order to get metrics, though used to be not needed, so you may newly see this error"
+    assert "testing_non_binary_target_name" in list(learn_options.keys()), "need this in order to get metrics, though used to be not needed, so you may newly see this error"
     if learn_options["testing_non_binary_target_name"] not in ['ranks', 'raw', 'thrs']:
         raise Exception('learn_otions["testing_non_binary_target_name"] must be in ["ranks", "raw", "thrs"]')
 
@@ -255,19 +255,19 @@ def run_models(models, orders, GP_likelihoods=['gaussian', 'warped'], WD_kernel_
                          "logregL1": "logregL1", "sgrna_from_doench":"sgrna_from_doench"}
 
     if not CV:
-        print "Received option CV=False, so I'm training using all of the data"
-        assert len(learn_options_set.keys()) == 1, "when CV is False, only 1 set of learn options is allowed"
+        print("Received option CV=False, so I'm training using all of the data")
+        assert len(list(learn_options_set.keys())) == 1, "when CV is False, only 1 set of learn options is allowed"
         assert len(models) == 1, "when CV is False, only 1 model is allowed"
 
-    for learn_options_str in learn_options_set.keys():
+    for learn_options_str in list(learn_options_set.keys()):
         # these options get augmented in setup
         partial_learn_opt = learn_options_set[learn_options_str]
         # if the model requires encoded features
         for model in models:
             # models requiring explicit featurization
-            if model in feat_models_short.keys():
+            if model in list(feat_models_short.keys()):
                 for order in orders:
-                    print "running %s, order %d for %s" % (model, order, learn_options_str)
+                    print("running %s, order %d for %s" % (model, order, learn_options_str))
                     Y, feature_sets, target_genes, learn_options, num_proc = setup(test=test, order=order, learn_options=partial_learn_opt) # TODO precompute features for all orders, as this is repated for each model                                        
 
                     if model == 'L1':
@@ -300,7 +300,7 @@ def run_models(models, orders, GP_likelihoods=['gaussian', 'warped'], WD_kernel_
                     all_learn_options[model_string] = learn_options_model
             # if the model doesn't require explicit featurization
             else:
-                print "running %s for %s" % (model, learn_options_str)
+                print("running %s for %s" % (model, learn_options_str))
                 Y, feature_sets, target_genes, learn_options, num_proc = setup(test=test, order=1, learn_options=partial_learn_opt)
                 if model == 'mean':
                     learn_options_model = mean_setup(copy.deepcopy(learn_options))
@@ -340,12 +340,12 @@ def runner(models, learn_options, GP_likelihoods=None, orders=None, WD_kernel_de
         dname = os.path.dirname(abspath) + "/../" + "results"
         if not os.path.exists(dname):
             os.makedirs(dname)
-            print "Created directory: %s" % str(dname)
+            print("Created directory: %s" % str(dname))
         if exp_name is None:
-            exp_name = results.keys()[0]
+            exp_name = list(results.keys())[0]
         myfile = dname+'/'+ exp_name + '.pickle'
         with open(myfile, 'wb') as f:
-            print "writing results to %s" % myfile
+            print("writing results to %s" % myfile)
             pickle.dump((results, all_learn_options), f, -1)
 
         return results, all_learn_options, all_metrics, gene_names
@@ -431,7 +431,7 @@ def save_final_model_V3(filename=None, include_position=True):
                                             adaboost_max_depths=[3], adaboost_num_estimators=[100], 
                                             adaboost_CV=False, learn_options_set=learn_options_set, 
                                             test=test, CV=False)
-    model = results.values()[0][3][0]
+    model = list(results.values())[0][3][0]
         
     with open(filename, 'wb') as f:
         pickle.dump((model, learn_options), f, -1)
@@ -456,8 +456,8 @@ def predict(seq, aa_cut=0, percent_peptide=0, model=None, model_file=None):
     # Y, feature_sets, target_genes, learn_options, num_proc = setup(test=False, order=2, learn_options=learn_options, data_file=test_filename)
     # inputs, dim, dimsum, feature_names = pd.concatenate_feature_sets(feature_sets)
 
-    Xdf = pandas.DataFrame(columns=[u'30mer', u'Strand'], data=[[seq, 'NA']])
-    gene_position = pandas.DataFrame(columns=[u'Percent Peptide', u'Amino Acid Cut position'], data=[[percent_peptide, aa_cut]])
+    Xdf = pandas.DataFrame(columns=['30mer', 'Strand'], data=[[seq, 'NA']])
+    gene_position = pandas.DataFrame(columns=['Percent Peptide', 'Amino Acid Cut position'], data=[[percent_peptide, aa_cut]])
     feature_sets = feat.featurize_data(Xdf, learn_options, pandas.DataFrame(), gene_position)
     inputs, dim, dimsum, feature_names = util.concatenate_feature_sets(feature_sets)
 
@@ -470,7 +470,7 @@ def write_results(predictions, file_to_predict):
     data = pandas.read_csv(file_to_predict)
     data['predictions'] = predictions
     data.to_csv(newfile)
-    print "wrote results to %s" % newfile
+    print("wrote results to %s" % newfile)
     return data, newfile
 
 if __name__ == '__main__':
@@ -526,7 +526,7 @@ if __name__ == '__main__':
              #thiskey = 'V1_num_remove_train_%d' % num_remove
             thiskey = 'try_models'
             learn_options_set = {thiskey: learn_options_2}
-            print "working on %s" % thiskey
+            print("working on %s" % thiskey)
              #learn_options_set = {'drug_gene': learn_options, 'drug': learn_options_2}
 
              #results, all_learn_options = run_models(['linreg', 'L1', 'L2'], orders=[1], test=True, target_name='score')
