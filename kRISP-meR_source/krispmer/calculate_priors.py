@@ -38,7 +38,7 @@ def read_histogram(filename):
 
 
 def determine_points(histo_data, savgol_filter_window):
-    values = histo_data.values()
+    values = list(histo_data.values())
     updated_values = savgol_filter(values, savgol_filter_window, 2)
     lower = higher = -1
     zipped_data = zip(histo_data.keys(), updated_values)
