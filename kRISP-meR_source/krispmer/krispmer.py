@@ -269,12 +269,19 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
         score = 1.0 * value2 / value1
         return_list[index] = score
         index = index + 1
+'''
+cd ~1
+git pull
+python setup.py install
+cd ~2
+krispmer combined.fastq target1 scores1 0
 
+'''
 
 def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers, jellyfish_filename, priors,
                                posteriors, max_hd, target_string, target_coverage, window_size, target_length, num_threads):
     candidates = list(candidates_count_dictionary.keys())
-    candidates_per_thread = len(candidates) / num_threads
+    candidates_per_thread = int(len(candidates) / num_threads)
     return_lists = []
     process_list = []
     for i in range(num_threads):
