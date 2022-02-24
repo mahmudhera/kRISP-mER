@@ -541,4 +541,5 @@ def main_func():
 
 # krispmer -n combined.fastq staphylo-target.fasta out 0 -J krispmer_temp/jf_binary_file.jf -H krispmer_temp/k_spectrum_histo_data
 if __name__ == '__main__':
+    print('Hello there! Welcome to krispmerv0!')
     main_func()
