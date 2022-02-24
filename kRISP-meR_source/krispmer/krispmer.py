@@ -94,7 +94,7 @@ def parse_arguments(arg_string = None):
     parses the arguments
     :return: the parsed argument
     """
-    print("krispmer v0 here!")
+    print("krispmer v0.0.8")
     print('Parsing arguments...')
     parser = generate_parser()
     args_after_parsing = parser.parse_args(arg_string)

@@ -5,11 +5,11 @@
 Reference free guide RNA designing tool for CRISPR
 
 ## What kRISP-meR is
-This is a tool to generate personalized guide RNAs for CRISPR without using a reference genome. 
+This is a tool to generate personalized guide RNAs for CRISPR without using a reference genome.
 
 Most genome-wide guideRNA designer tools have to use the whole reference genome to populate their database. This limits their usage for organisms with incomplete reference genome. Instead of using a reference, kRISP-meR works using the sequenced reads, and a genomic target location (location where CRISPR cleavage is intended). Using the sequenced reads only, kRISP-meR is able to design variant-aware guideRNAs and predict those with minimized off-target activity.
 
-This tool is designed run on a Linux machine on Python2.7
+This tool was initially designed to run on a Linux machine on Python2.7. With the decrepated Python2, this tool has been revised to run on Python3. If there are any issues, email mahmudhera93@gmail.com or open a github issue.
 
 ## Dependencies
 The following need to be installed to successfully run kRISP-meR
@@ -78,7 +78,7 @@ krispmer READS_FILENAME TARGET_FILENAME OUTPUT_FILENAME MAX_HD
 Here, **MAX_HD** is the maximum Hammind distance that kRISP-meR will consider when scanning target sites for a particular guideRNA. The output of the program is saved in the **OUTPUT_FILENAME** file in csv format.
 
 ## Interpreting the output
-After the program exits, you will see four columns after opening the output file. The first is the guideRNA in the + strand, the second is the guideRNA in the - strand (reverse complement of the first). The third column stores the estimated inverse-specificity score assigned to a particular guideRNA. And finally, the fourth column stores the strand in which the **NGG** pam was found by kRISP-meR. 
+After the program exits, you will see four columns after opening the output file. The first is the guideRNA in the + strand, the second is the guideRNA in the - strand (reverse complement of the first). The third column stores the estimated inverse-specificity score assigned to a particular guideRNA. And finally, the fourth column stores the strand in which the **NGG** pam was found by kRISP-meR.
 
 Besides the scores output file, you will also see a directory named `krispmer_temp` and a file named `krispmer.log`. The `krispmer_temp` directory contains the temporary files created when executing the program. You can use `-r` flag to delete them automatically (see detailed usage below). `krispmer.log` file contains detailed steps of the whole pipeline.
 
@@ -105,13 +105,13 @@ kRISP-meR allows you to design guide RNAs with WGS shotgun reads (in a FASTQ fil
 1. `-J`: kRISP-meR uses Jellyfish to count the k-mers in a set of sequenced reads (in a FASTQ file). Usually, that takes time. For the same set of reads (for the same FASTQ file), if you want to make multiple runs, then Jellyfish would have to run multiple times, resulting in a huge amount of time. Instead, you can input the Jellyfish binary file using this `-J` flag.
 1. `-H`: kRISP-meR uses k-spectrum histogram from the k-mer counts and uses that histogram to calculate prior and posterior probabilities (that are used to assign scores to the guideRNAs). If you have the histogram file ready, you can input the file with `-H` flag.
 1. `-h`: You can see help with `-h` flag.
-1. `-m`: You can set the maximum number of times a region may repeat in the genome using `-m` flag. Default: 50. 
+1. `-m`: You can set the maximum number of times a region may repeat in the genome using `-m` flag. Default: 50.
 1. `-w`: kRISP-meR uses savgol smoothing filter to smoothen the k-spectrum data before applying Expectation-Maximization to estimate read coverage. You can set the window size of the filter using `-w` flag.
 1. `-s`: You can choose to exclude the guideRNAs that contain a stop-codon using the flag `-s`.
 1. `-v`: You can choose to polish the target region and personalize that for the individual whose sequenced reads are being used. You can do so using the flag `-v`. A long pipeline using bowtie2, samtools and pilon will start executing.
 1. `-n`: You can choose to scan the PAM sequences in the -ve strand using the flag `-n`.
 1. `-c`: You can set a cut-off score of the inverse-specificity using the flag `-c`. The guideRNAs with score higher than that will be dropped.
-1. `-a PAM1 PAM2 ...`: You can provide kRISP-meR with a list of PAMs to consider with `-a` flag. By default, NGG PAMs are considered. 
+1. `-a PAM1 PAM2 ...`: You can provide kRISP-meR with a list of PAMs to consider with `-a` flag. By default, NGG PAMs are considered.
 1. `-r`: You can choose to remove the temporary files automatically using the flag `-r`.
 1. `-j`: You can set the number of threads you want to use to count the k-mers in the sequenced reads using Jellyfish using the flag `-j`.
 1. `-b`: You can set the number of bowtie2 threads with the flag `-b`.
