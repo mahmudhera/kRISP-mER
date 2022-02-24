@@ -11,7 +11,7 @@ def generate_dic_from_k_spectrum(filename):
         3 2
     This means there were two occurences where copy number = 1 was observed,
     six occurences where copy number = 2 was observed and so on.
-    
+
     returns: the dictionary
     """
     df = pd.read_csv(filename, delimiter=' ', header=None, names = ['key', 'data'])
@@ -23,11 +23,11 @@ def get_target_coverage(k_spectrum_data, read_coverage, max_priors):
     The # of times the target appears in the genome is estimated using the spectrum data.
     The reads in genome are modeled as a mixture of poissons, with mean = coverage, 2*coverage, 3*coverage and so on.
     When the tgt appears i times in the genome, the probability of observing the k-spectrum from the poisson with mean i*coverage will be the maximum.
-    
+
     The log likelihoods are calculated and the corresponding max count is then returned.
     """
     sum_all_values = sum(k_spectrum_data.values())
-    dot = np.dot(k_spectrum_data.keys(), k_spectrum_data.values())
+    dot = np.dot(list(k_spectrum_data.keys()), list(k_spectrum_data.values()))
     max_llhood = -read_coverage*sum_all_values + np.log(read_coverage)*dot
     tgt_coverage = 1
     for i in range(2,max_priors):
