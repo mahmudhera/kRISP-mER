@@ -58,16 +58,16 @@ def extract_individual_level_data(one_result):
     assumes that results here is the value for a results dictionary for one key, i.e. one entry in a dictionary loaded up from saved results with pickle
     e.g. all_results, all_learn_options = pickle.load(some_results_file)
     then call extract_individual_level_data(one_results = all_results['firstkey'])
-    then, one_results contains: metrics, gene_pred, fold_labels, m, dimsum, filename, feature_names        
-    '''    
+    then, one_results contains: metrics, gene_pred, fold_labels, m, dimsum, filename, feature_names
+    '''
     metrics, gene_pred, fold_labels, m, dimsum, filename, feature_names  = one_result
     all_true_ranks = np.empty(0)
     all_pred = np.empty(0)
-    for f in list(fold_labels):        
+    for f in list(fold_labels):
         these_ranks = gene_pred[0][0][f]['ranks'] #similar for thrs
         these_pred =  gene_pred[0][1][f]
         all_true_ranks = np.concatenate((all_true_ranks, these_ranks))
-        all_pred = np.concatenate((all_pred, these_pred))            
+        all_pred = np.concatenate((all_pred, these_pred))
     return all_true_ranks, all_pred
 
 def spearmanr_nonan(x,y):
@@ -78,7 +78,7 @@ def spearmanr_nonan(x,y):
     r, p = st.spearmanr(x, y)
     if np.isnan(p):
         if len(np.unique(x))==1 or len(np.unique(y))==1:
-            print "WARNING: spearmanr is nan due to unique values, setting to 0"
+            print ("WARNING: spearmanr is nan due to unique values, setting to 0")
             p = 0.0
             r = 0.0
         else:
@@ -159,7 +159,7 @@ def target_genes_stats(genes=['HPRT1', 'TADA1', 'NF2', 'TADA2B', 'NF1', 'CUL3', 
     for gene in genes:
         seq = get_gene_sequence(gene)
         if seq != None:
-            print '%s \t\t\t\t len: %d \t GCcont: %.3f \t Temp: %.4f \t molweight: %.4f' % (gene, len(seq), SeqUtil.GC(seq), Tm.Tm_staluc(seq, rna=False), SeqUtil.molecular_weight(seq, 'DNA'))
+            print ('%s \t\t\t\t len: %d \t GCcont: %.3f \t Temp: %.4f \t molweight: %.4f' % (gene, len(seq), SeqUtil.GC(seq), Tm.Tm_staluc(seq, rna=False), SeqUtil.molecular_weight(seq, 'DNA')))
 
 
 def ranktrafo(data):
@@ -270,7 +270,7 @@ def get_data(data, y_names, organism="human", target_gene=None):
     features['Target gene'] = target_gene
     features['Organism'] = organism
     features['Strand'] = pandas.DataFrame(data['Strand'])
-    
+
     return features, outputs
 
 
@@ -454,7 +454,7 @@ def feature_importances(results, fontsize=16, figsize=(14, 8)):
         avg_importance = np.mean(all_split_importances, axis=1)[:, None]
         std_importance = np.std(all_split_importances, axis=1)[:, None]
         imp_array = np.concatenate((np.array(feature_names)[:, None], avg_importance, std_importance), axis=1)
-        
+
         df = pandas.DataFrame(data=imp_array, columns=['Feature name', 'Mean feature importance', 'Std. Dev.'])
         df = df.convert_objects(convert_numeric=True)
 
@@ -644,7 +644,7 @@ def plot_all_metrics(metrics, gene_names, all_learn_options, save, plots=None, b
                     plt.bar(ind+(i*width), metrics[method][metric], width, color=plt.cm.Paired(1.*i/len(metrics.keys())), label=method)
 
                 median_metric = np.median(metrics[method][metric])
-                print method, metric, median_metric
+                print (method, metric, median_metric)
                 assert not np.isnan(median_metric), "found nan for %s, %s" % (method, metric)
                 if metric not in boxplot_arrays.keys():
                     boxplot_arrays[metric] = np.array(metrics[method][metric])[:, None]
@@ -672,7 +672,7 @@ def plot_all_metrics(metrics, gene_names, all_learn_options, save, plots=None, b
         if save == True:
             plt.xticks(ind+0.5, gene_names)
             if metric=='AUC':
-                plt.ylim([0.5, 1.0])                
+                plt.ylim([0.5, 1.0])
             plt.savefig(basefile + "_" + metric + "_bar" + ".png")
 
         if (plots == None or "boxplots" in plots) and 'global' not in metric:
@@ -698,13 +698,13 @@ def load_results(directory, all_results, all_learn_options, model_filter=None, a
 
         if model_filter != None and model_filter not in results_file:
             continue
-                
+
         try:
             with open(results_file, 'rb') as f:
                 results, learn_options = pickle.load(f)
             gene_names = None
-        except:            
-            with open(results_file, 'rb') as f:                
+        except:
+            with open(results_file, 'rb') as f:
                 # this is when I accidentally saved from the plotting routine and should not generally be needed
                 results, learn_options, gene_names = pickle.load(f)
 
@@ -714,7 +714,7 @@ def load_results(directory, all_results, all_learn_options, model_filter=None, a
             else:
                 k_new = k
             assert k_new not in all_results.keys(), "found %s already" % k
-            print "adding key %s (from file %s)" % (k_new, os.path.split(results_file)[-1])
+            print ("adding key %s (from file %s)" % (k_new, os.path.split(results_file)[-1]))
             all_results[k_new] = results[k]
             all_learn_options[k_new] = learn_options[k]
 
@@ -861,13 +861,13 @@ def plot_old_vs_new_feat(results, models, fontsize=20, filename=None, print_outp
         feat_AUC_se.append(np.std(metrics_feat['AUC']))
 
 
-    print "old features"
-    print "mean: " + str(base_spearman_means)
-    print "std: " + str(base_spearman_std)
-        
-    print "old + new features"
-    print "mean: " + str(feat_spearman_means)
-    print "std: " + str(feat_spearman_std)
+    print ("old features")
+    print ("mean: " + str(base_spearman_means))
+    print ("std: " + str(base_spearman_std))
+
+    print ("old + new features")
+    print ("mean: " + str(feat_spearman_means))
+    print ("std: " + str(feat_spearman_std))
 
     plt.figure()
     ind = np.arange(len(models))
@@ -911,7 +911,7 @@ def remove_top_right_on_plot():
     ax.yaxis.set_ticks_position('left')
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    
+
 
 if __name__ == '__main__':
     # v3_v3_a_feat = 'tests/ens/'
@@ -935,7 +935,7 @@ if __name__ == '__main__':
         X, Y = combine_organisms()
         X.to_pickle('../data/X.pd') #sequence features (i.e. inputs to prediction)
         Y.to_pickle('../data/Y.pd') #cell-averaged ranks, plus more (i.e. possible targets for prediction)
-        print "done writing to file"
+        print ("done writing to file")
     elif V =="2":
         # this is now all in predict.py
         pass
