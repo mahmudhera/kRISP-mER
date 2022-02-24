@@ -281,12 +281,12 @@ krispmer combined.fastq target1 scores1 0
 def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers, jellyfish_filename, priors,
                                posteriors, max_hd, target_string, target_coverage, window_size, target_length, num_threads):
     candidates = list(candidates_count_dictionary.keys())
-    candidates_per_thread = int(len(candidates) / num_threads)
+    candidates_per_thread = len(candidates) / num_threads
     return_lists = []
     process_list = []
     for i in range(num_threads):
-        low_index = i * candidates_per_thread
-        high_index = min(low_index + candidates_per_thread, len(candidates))
+        low_index = int(i * candidates_per_thread)
+        high_index = int(min(low_index + candidates_per_thread, len(candidates)))
         print(low_index, high_index)
         candidates_count_dictionary_thread = {k:candidates_count_dictionary[k] for k in candidates[low_index:high_index]}
         return_list_this_thread = Array('d', len(list(candidates_count_dictionary_thread.keys())) * [-1.0])
