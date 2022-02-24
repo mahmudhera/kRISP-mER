@@ -39,10 +39,9 @@ def read_histogram(filename):
 
 def determine_points(histo_data, savgol_filter_window):
     values = list(histo_data.values())
-    print(values)
     updated_values = savgol_filter(values, savgol_filter_window, 2)
     lower = higher = -1
-    zipped_data = zip(histo_data.keys(), updated_values)
+    zipped_data = list(zip(histo_data.keys(), updated_values))
     for i in range(1, len(zipped_data)):
         if zipped_data[i - 1][1] > zipped_data[i][1] and zipped_data[i + 1][1] > zipped_data[i][1]:
             lower = zipped_data[i][0]
