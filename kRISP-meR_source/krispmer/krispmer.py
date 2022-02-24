@@ -144,7 +144,7 @@ def generate_k_spectrum_histogram(jellyfish_filename, histo_output_file=hist_out
     histo_command_args = histo_command.split(' ')
     output_file = open(histo_output_file, 'w')
     subprocess.call(histo_command_args, stdout=output_file)
-    f.close()
+    output_file.close()
     return read_histogram(histo_output_file)
 
 
