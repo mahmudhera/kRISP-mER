@@ -4,7 +4,7 @@ triemodule = Extension('trie', sources = ['trie/triemodule.c', 'trie/trie.c'])
 
 setup(
     name = 'krispmer',
-    version = '0.0.7',
+    version = '0.0.8',
     author= 'Mahmudur Rahman Hera',
     author_email= 'mahmudhera93@gmail.com',
     description = 'A tool to design CRISPR guideRNA without using reference genome',
