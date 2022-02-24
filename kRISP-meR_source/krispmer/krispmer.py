@@ -468,7 +468,7 @@ def krispmer_main(parsed_args):
     end_time = time.time()
     logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
     # if variance too much, then throw another warning
-    variance = np.var(window_copy_numbers.values())
+    variance = np.var(list(window_copy_numbers.values()))
     if variance > 1.0:
         logging.info('Warning: copy-numbers of target k-mers have high variation. The target may not be unique')
         print('Warning: copy-numbers of target k-mers have high variation. The target may not be unique')
