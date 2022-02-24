@@ -280,6 +280,7 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
     for i in range(num_threads):
         low_index = i * candidates_per_thread
         high_index = min(low_index + candidates_per_thread, len(candidates))
+        print(low_index, high_index)
         candidates_count_dictionary_thread = {k:candidates_count_dictionary[k] for k in candidates[low_index:high_index]}
         return_list_this_thread = Array('d', len(list(candidates_count_dictionary_thread.keys())) * [-1.0])
         return_lists.append(return_list_this_thread)
