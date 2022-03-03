@@ -12,7 +12,7 @@ setup(
     #install_requires = [
     #    'biopython>=1.66','pysam==0.8.3','pyfaidx==0.4.7.1','bx-python==0.7.3'
     #],
-    packages = find_packages(),
+    packages = find_packages('krispmer'),
     ext_modules = [triemodule],
     package_data = {'krispmer' : ['pilon-1.23.jar',
                                   'CFD_scoring/mismatch_score.pkl',
