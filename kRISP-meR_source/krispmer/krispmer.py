@@ -2,7 +2,9 @@ __author__ = 'Mahmudur Rahman Hera'
 
 import numpy as np
 import argparse
-from generate_personalized_target import read_target_region, detect_variant
+#from generate_personalized_target import read_target_region, detect_variant
+import generate_personalized_target.read_target_region
+import generate_personalized_target.detect_variant
 import generate_all_candidates as candidate_generator
 import pandas as pd
 from calculate_priors import determine_priors_posteriors, read_histogram
