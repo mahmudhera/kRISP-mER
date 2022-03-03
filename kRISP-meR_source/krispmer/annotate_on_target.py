@@ -8,7 +8,7 @@ def complement(seq):
 def reverse_complement(s):
     return complement(s[::-1])
 
-
+# returns with just the context of 30-mer
 def annotate_with_on_target_scores(guideRNAs, target_string):
     reverse_target_string = reverse_complement(target_string)
     for annotated_guideRNA in guideRNAs:
