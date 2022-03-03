@@ -2,24 +2,23 @@ __author__ = 'Mahmudur Rahman Hera'
 
 import numpy as np
 import argparse
-from krispmer.generate_personalized_target import read_target_region, detect_variant
-#from utils.generate_personalized_target import read_target_region
-#from utils.generate_personalized_target import detect_variant
-import generate_all_candidates as candidate_generator
 import pandas as pd
-from calculate_priors import determine_priors_posteriors, read_histogram
 import dna_jellyfish as jellyfish
-from MLE import get_target_coverage
-from generate_adjacent_mers import generate_adjacent_mers
-from get_cfd_score import get_score
 import logging
 import os
 import subprocess
 from collections import Counter
 import time
-from annotate_on_target import annotate_with_on_target_scores
 import json
 from multiprocessing import Process, Array
+
+import krispmer.generate_all_candidates as candidate_generator
+from krispmer.calculate_priors import determine_priors_posteriors, read_histogram
+from krispmer.generate_personalized_target import read_target_region, detect_variant
+from krispmer.annotate_on_target import annotate_with_on_target_scores
+from krispmer.MLE import get_target_coverage
+from krispmer.generate_adjacent_mers import generate_adjacent_mers
+from krispmer.get_cfd_score import get_score
 
 pam = "NGG"
 grna_length = 20
