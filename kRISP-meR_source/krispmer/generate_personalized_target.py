@@ -63,8 +63,8 @@ def detect_variant(target_filename, reads_filename, bt2_threads, samtools_thread
         f.write('cd ./krispmer_temp\n')
         f.write('bowtie2-build -f ../' + target_filename + ' krispmer\n')
         f.write('bowtie2 --local --threads ' + str(bt2_threads) + ' -x krispmer -U ../' + reads_filename + ' -S sam_out.sam\n')
-        f.write('sed \'s/SN:.*LN:/SN:' + str(read_target_sequence_name(target_filename)) + '\tLN:/1\' sam_out.sam > sam_out.sam\n')
-        f.write('samtools view -@ ' + str(samtools_threads) + ' -bhS sam_out.sam > bam_out.bam\n')
+        f.write('sed \'s/SN:.*LN:/SN:' + str(read_target_sequence_name(target_filename)) + '\tLN:/1\' sam_out.sam > sam_out2.sam\n')
+        f.write('samtools view -@ ' + str(samtools_threads) + ' -bhS sam_out2.sam > bam_out.bam\n')
         f.write('samtools sort -@ ' + str(sort_threads) + ' bam_out.bam > bam_sorted.bam\n')
         f.write('samtools index -@ ' + str(samtools_threads) + ' bam_sorted.bam\n')
         f.write('java -Xmx16G -jar pilon-1.23.jar --genome ../' + target_filename + ' --unpaired bam_sorted.bam '
