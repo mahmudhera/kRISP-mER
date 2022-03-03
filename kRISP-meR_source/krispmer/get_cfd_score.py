@@ -6,8 +6,8 @@ http://www.nature.com/nbt/journal/v34/n2/abs/nbt.3437.html
 import pickle
 from pkg_resources import resource_filename
 
-mms = 'mismatch_score.pkl'
-pams = 'pam_scores.pkl'
+mms = resource_filename(__name__,'CFD_scoring/mismatch_score.pkl')
+pams = resource_filename(__name__,'CFD_scoring/pam_scores.pkl')
 
 # this computes the reverse complement of an RNA string
 def revcom(s):
@@ -42,6 +42,8 @@ def get_mm_pam_scores(mms, pams):
         mm_scores = pickle.load(open(mms, 'rb'))
         pam_scores = pickle.load(open(pams, 'rb'))
         return (mm_scores, pam_scores)
+    except:
+        raise Exception("Could not find file with mismatch scores or PAM scores")
 
 
 mm_scores, pam_scores = get_mm_pam_scores(mms, pams)
