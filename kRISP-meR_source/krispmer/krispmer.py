@@ -508,6 +508,10 @@ def krispmer_main(parsed_args):
 
     return list_candidates
 
+def get_gc_content(seq):
+    seq = seq.upper()
+    gc_count = len( [ x for x in seq if x=='G' or x=='C' ] )
+    return 1.0*gc_count/len(seq)
 
 def main_func():
     args = parse_arguments()
@@ -523,14 +527,15 @@ def main_func():
     print("Writing to output file.")
     logging.info('Writing to output file...')
     output_file = open(args.scores_file, 'w')
-    output_file.write('tgt_in_plus,tgt_in_minus,inverse_specificity,strand\n')
+    output_file.write('tgt_in_plus,tgt_in_minus,inverse_specificity,strand,gc_content\n')
     for gRNA in gRNAs:
         seq = gRNA[0]
         score = gRNA[1]
         strand = gRNA[4]
+        gc_content = get_gc_content(seq)
         if score < 0.0:
             continue
-        output_file.write(seq + ',' + reverse_complement(seq) + ',' + str(score) + ',' + strand + '\n')
+        output_file.write(seq + ',' + reverse_complement(seq) + ',' + str(score) + ',' + strand + ',' + str(gc_content) + '\n')
     output_file.close()
 
     if args.remove_temp:
