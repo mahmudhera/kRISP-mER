@@ -10,7 +10,8 @@ from pkg_resources import resource_filename
 ## TODO: use BioConda's SeqIO later
 def read_target_region(filename):
     """
-    reads a fasta file and generates the target region as a string
+    reads a fasta file and generates the target region as a string.
+    fasta file must have a single sequence, and no more
     :param filename: fasta file (target region)
     :return: string without the line containing '>'
     """
@@ -19,6 +20,17 @@ def read_target_region(filename):
     content = [x.strip() for x in content][1:]
     string_ = ''.join(content)
     return string_.upper()
+
+def read_target_sequence_name(filename):
+    """
+    reads a fasta file and generates the sequence name as a string.
+    fasta file must have a single sequence, and no more
+    :param filename: fasta file (target region)
+    :return: sequence name without the '>' character
+    """
+    with open(filename) as f:
+        content = f.readlines()
+    return content[0][1:].strip()
 
 
 def detect_variant(target_filename, reads_filename, bt2_threads, samtools_threads, sort_threads, pilon_threads):
@@ -51,6 +63,7 @@ def detect_variant(target_filename, reads_filename, bt2_threads, samtools_thread
         f.write('cd ./krispmer_temp\n')
         f.write('bowtie2-build -f ../' + target_filename + ' krispmer\n')
         f.write('bowtie2 --local --threads ' + str(bt2_threads) + ' -x krispmer -U ../' + reads_filename + ' -S sam_out.sam\n')
+        f.write('sed \'s/SN:.*LN:/SN:' + str(read_target_sequence_name(target_filename)) + '\tLN:/1\' > sam_out.sam\n')
         f.write('samtools view -@ ' + str(samtools_threads) + ' -bhS sam_out.sam > bam_out.bam\n')
         f.write('samtools sort -@ ' + str(sort_threads) + ' bam_out.bam > bam_sorted.bam\n')
         f.write('samtools index -@ ' + str(samtools_threads) + ' bam_sorted.bam\n')
