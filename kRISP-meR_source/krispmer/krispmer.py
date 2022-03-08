@@ -172,8 +172,7 @@ def generate_k_spectrum_of_target_and_count(target_string, jellyfish_count_file,
     for i in range(length - k + 1):
         subst = target[i:i + k]
         mer1 = jellyfish.MerDNA(subst)
-        mer2 = jellyfish.MerDNA(subst)
-        mer2.canonicalize()
+        mer2 = jellyfish.MerDNA(reverse_complement(subst))
         count = qf[mer1] + qf[mer2]
         counts_in_positions[i] = count
         if count == 0:
@@ -249,8 +248,7 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
                 cp = get_score(reverse_complement(candidate), reverse_complement(mer))
             qf = jellyfish_filename
             merDNA1 = jellyfish.MerDNA(mer)
-            merDNA2 = jellyfish.MerDNA(mer)
-            merDNA2.canonicalize()
+            merDNA2 = jellyfish.MerDNA(reverse_complement(mer))
             k = qf[merDNA1] + qf[merDNA2]
             if k <= 0:
                 continue
