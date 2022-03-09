@@ -253,6 +253,7 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
             if k <= 0:
                 continue
             if k >= max_k:
+                print(candidate)
                 flag = False
                 break
             p = float(target_string.count(mer))
