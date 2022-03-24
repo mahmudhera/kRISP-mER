@@ -255,7 +255,7 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
             if k <= 0:
                 continue
             if k >= max_k:
-                print(candidate)
+                print(candidate, max_k)
                 flag = False
                 break
             p = float(target_string.count(mer))
@@ -269,7 +269,12 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
             value1 = value1 + cp * p
             value2 = value2 + cp * accum
         if value1 <= 0.0 or flag is False:
+            if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
+                print('OK!')
             continue
+        else:
+            if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
+                print('Problem!!!')
         score = 1.0 * value2 / value1
         return_list[index] = score
         index = index + 1
