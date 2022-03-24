@@ -250,6 +250,8 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
             merDNA1 = jellyfish.MerDNA(mer)
             merDNA2 = jellyfish.MerDNA(reverse_complement(mer))
             k = qf[merDNA1] + qf[merDNA2]
+            if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
+                print(candidate, mer, k)
             if k <= 0:
                 continue
             if k >= max_k:
