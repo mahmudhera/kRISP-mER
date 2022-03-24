@@ -273,9 +273,6 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
             #    print('OK!')
             index = index + 1
             continue
-        else:
-            #if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
-            #    print('Problem!!!')
         score = 1.0 * value2 / value1
         return_list[index] = score
         index = index + 1
