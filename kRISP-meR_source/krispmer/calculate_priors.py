@@ -61,7 +61,7 @@ def expectation_maximization(data_points_raw, init_mean, max_count, max_k):
     keys = data_points_raw.keys()
     data_points = np.zeros((max_key))
     multiplied_data_points = np.zeros((max_key))
-    for k in range(max_key):
+    for k in range(1, max_key):
         if k in keys:
             data_points[k] = data_points_raw[k]
             multiplied_data_points[k] = data_points_raw[k] * k
