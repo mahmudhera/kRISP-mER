@@ -285,6 +285,10 @@ def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers,
     return_lists = []
     process_list = []
     handled_so_far = 0
+
+    global max_k
+    print("Largest k possible is: " + str(max_k))
+
     for i in range(num_threads):
         low_index = handled_so_far
         high_index = min( int( (i+1)*candidates_per_thread ) , len(candidates))
