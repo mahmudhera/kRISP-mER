@@ -405,6 +405,7 @@ def krispmer_main(parsed_args):
                                                                     max_limit_count, savgol_filter_window)
         max_k = len(posteriors)
         logging.info('Finished calculating priors and posteriors\n')
+        print('Estimated read coverage is: ' + str(read_coverage))
         end_time = time.time()
         logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
