@@ -166,6 +166,7 @@ def determine_priors_posteriors(histo_data, max_priors, savgol_filter_window):
     :return: priors in an array, posteriors in an array, read-coverage, the inversion point
     """
     inv_point, init_coverage = determine_points(histo_data, savgol_filter_window)
+    logging.info('Initial coverage is: ' + str(init_coverage))
     max_k = int((max_priors * init_coverage))
     estimated_kmer_coverage, priors, poissons, probabilities = expectation_maximization(histo_data, init_coverage,
                                                                                          max_priors, max_k)
