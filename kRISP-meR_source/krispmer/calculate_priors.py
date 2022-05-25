@@ -39,7 +39,7 @@ def read_histogram(filename):
 
 def determine_points(histo_data, savgol_filter_window):
     values = list(histo_data.values())
-    updated_values = savgol_filter(values, savgol_filter_window, 2)
+    updated_values = savgol_filter(values, savgol_filter_window, 3)
     logging.info("Updated values after smoothing:")
     for v in updated_values:
         logging.info(v)
