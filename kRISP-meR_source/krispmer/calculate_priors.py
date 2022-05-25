@@ -41,7 +41,9 @@ def determine_points(histo_data, savgol_filter_window):
     values = list(histo_data.values())
     updated_values = savgol_filter(values, savgol_filter_window, 2)
     logging.info("Updated values after smoothing:")
-    logging.info(updated_values)
+    for v in updated_values:
+        logging.info(v, end=',')
+    logging.info("")
     lower = higher = -1
     zipped_data = list(zip(histo_data.keys(), updated_values))
     for i in range(1, len(zipped_data)):
