@@ -5,6 +5,7 @@ import pandas as pd
 from scipy.signal import savgol_filter
 import logging
 import time
+from math import log
 
 threshold = 0.1
 logsum_k = {}
@@ -38,10 +39,11 @@ def read_histogram(filename):
 
 
 def determine_points(histo_data, savgol_filter_window):
+    #values = [log(v) for v in list(histo_data.values())]
     values = list(histo_data.values())
-    updated_values = savgol_filter(values, savgol_filter_window, 2)
+    updated_values = savgol_filter(values, savgol_filter_window, savgol_filter_window-1)
     logging.info("Updated values after smoothing:")
-    for v in updated_values:
+    for v in updated_values[:500]:
         logging.info(v)
     logging.info("")
     lower = higher = -1
@@ -195,9 +197,10 @@ def determine_priors_posteriors(histo_data, max_priors, savgol_filter_window):
 
 # this main method only exists for testing purposes
 if __name__ == '__main__':
+    logging.basicConfig(filename="logfile.log", level=logging.INFO)
     start = time.time()
-    d = read_histogram('histogram-human')
-    priors, posteriors, estimated_kmer_coverage = determine_priors_posteriors(d, 100, 5)
+    d = read_histogram('histogram')
+    priors, posteriors, estimated_kmer_coverage = determine_priors_posteriors(d, 100, 9)
     print(estimated_kmer_coverage)
     print(sum(posteriors))
     end = time.time()
