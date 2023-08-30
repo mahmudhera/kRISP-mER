@@ -62,7 +62,7 @@ def detect_variant(target_filename, reads_filename, bt2_threads, samtools_thread
     with open('krispmer_temp/commands_py.sh', 'w') as f:
         f.write('cd ./krispmer_temp\n')
         f.write('bowtie2-build -f ../' + target_filename + ' krispmer\n')
-        f.write('bowtie2 --local --threads ' + str(bt2_threads) + ' -x krispmer -U ../' + reads_filename + ' -S sam_out.sam\n')
+        f.write('bowtie2 --no-unal --local --threads ' + str(bt2_threads) + ' -x krispmer -U ../' + reads_filename + ' -S sam_out.sam\n')
         #f.write('sed \'s/SN:.*LN:/SN:' + str(read_target_sequence_name(target_filename)) + '\tLN:/1\' sam_out.sam > sam_out2.sam\n')
         f.write('samtools view -@ ' + str(samtools_threads) + ' -bhS sam_out.sam > bam_out.bam\n')
         f.write('samtools view -H bam_out.bam | sed \'s/SN:.*LN:/SN:' + str(read_target_sequence_name(target_filename)) + '\tLN:/1\' | samtools reheader - bam_out.bam > bam_out2.bam\n')
