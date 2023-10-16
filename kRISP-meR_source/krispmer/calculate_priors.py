@@ -58,8 +58,8 @@ def determine_points(histo_data, savgol_filter_window):
 
 
 def expectation_maximization(data_points_raw, init_mean, max_count, max_k):
-    logging.info('The histogram data:')
-    logging.info(data_points_raw)
+    #logging.info('The histogram data:')
+    #logging.info(data_points_raw)
     # filter data points so that too large points are not there
 
     max_key = max_k + 1
@@ -72,8 +72,8 @@ def expectation_maximization(data_points_raw, init_mean, max_count, max_k):
             data_points[k] = data_points_raw[k]
             multiplied_data_points[k] = data_points_raw[k] * k
 
-    logging.info('After filtering, the histogram data:')
-    logging.info(data_points)
+    #logging.info('After filtering, the histogram data:')
+    #logging.info(data_points)
 
     # initial poisson distributions, the first is intended to capture the error component
     poissons = [poisson(1.01)]
@@ -110,9 +110,13 @@ def expectation_maximization(data_points_raw, init_mean, max_count, max_k):
         for j in range(max_key):
             denominators[j] = np.dot(probabilities[:, j], priors)
 
+        print(denominators)
+
         for i in range(max_count):
             for j in range(max_key):
                 tendencies[i][j] = 1.0 * probabilities[i][j] * priors[i] / denominators[j]
+                if np.isnan(tendencies[i][j]):
+                    tendencies[i][j] = 0.0
 
         logging.debug('The degrees of membership are:')
         logging.debug(tendencies)
@@ -126,6 +130,7 @@ def expectation_maximization(data_points_raw, init_mean, max_count, max_k):
         logging.info('The new means are:')
         means = [p.get_mean() for p in poissons]
         logging.info(means)
+        print(means[:10])
 
         iteration_count = iteration_count + 1
         logging.info('Estimating the average coverage from the means...')
@@ -197,10 +202,11 @@ def determine_priors_posteriors(histo_data, max_priors, savgol_filter_window):
 
 # this main method only exists for testing purposes
 if __name__ == '__main__':
+
     logging.basicConfig(filename="logfile.log", level=logging.INFO)
     start = time.time()
     d = read_histogram('histogram')
-    priors, posteriors, estimated_kmer_coverage = determine_priors_posteriors(d, 100, 9)
+    priors, posteriors, estimated_kmer_coverage = determine_priors_posteriors(d, 100, 15)
     print(estimated_kmer_coverage)
     print(sum(posteriors))
     end = time.time()
