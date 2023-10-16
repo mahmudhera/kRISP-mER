@@ -39,10 +39,10 @@ def generate_parser():
     Generates the parser for appropriate parsing, then returns the parser
     :return: the parser
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='krispmer', description='Author: Mahmudur Rahman Hera')
 
     # positional arguments
-    parser.add_argument("reads_file", type=str, help="provide the filename of the reads file")
+    parser.add_argument("reads_file", type=str, help="provide the filename of the reads file.")
     parser.add_argument("target_file", type=str,
                         help="provide the filename of the file where there is the target region. Specify with full "
                              "path.")
