@@ -62,7 +62,7 @@ def generate_parser():
     parser.add_argument("-ein", "--em_input_filename", type=str,
                         help="EM-computed values to be read from this file")
     parser.add_argument("-m", "--max_copy_number", type=int, help="enter the highest number of times you think a "
-                                                                  "genome region may repeat. Default: 50.", default=max_limit_count)
+                                                                  "genome region may repeat. Default: 50.", default=max_limit_count) ## k-mers
     parser.add_argument("-w", "--target_sliding_window_size", type=int, help="the size of target sliding window")
     parser.add_argument("-f", "--savgol_filter_window", type=int,
                         help="enter the window size of savgol filter. This must be an odd integer. Default: 9.")
@@ -243,7 +243,7 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
         flag = True
         for mer in trie.keys():
             if strand_type == '+':
-                cp = get_score(candidate, mer)
+                cp = get_score(candidate, mer) ## cp -> cutting_probability
             else:
                 cp = get_score(reverse_complement(candidate), reverse_complement(mer))
             qf = jellyfish_filename
@@ -406,6 +406,7 @@ def krispmer_main(parsed_args):
         max_k = len(posteriors)
         logging.info('Finished calculating priors and posteriors\n')
         print('Estimated read coverage is: ' + str(read_coverage))
+        logging.info('Estimated read coverage is: ' + str(read_coverage) + '\n')
         end_time = time.time()
         logging.info('Time needed: ' + str(end_time - start_time) + ' seconds\n')
 
@@ -565,3 +566,10 @@ def main_func():
 if __name__ == '__main__':
     print('Hello there! Welcome to krispmerv0!')
     main_func()
+
+
+##  lambda = coverage, amra expect kortesi how many times a k-mer appears 
+##  lambda_t = 5 * lambda 
+## 5 = lambda_t / lambda
+
+## lambda / (lambda_t * lambda_t / lambda)
