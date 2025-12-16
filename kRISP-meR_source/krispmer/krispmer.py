@@ -249,7 +249,7 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
             qf = jellyfish_filename
             merDNA1 = jellyfish.MerDNA(mer)
             merDNA2 = jellyfish.MerDNA(reverse_complement(mer))
-            k = qf[merDNA1] + qf[merDNA2]
+            k = qf[merDNA1] + qf[merDNA2]    # Estimated count for this k-mer in the genome
             #if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
                 #print(candidate, mer, k)
             if k <= 0:
@@ -258,21 +258,29 @@ def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_f
                 #print(candidate, max_k)
                 flag = False
                 break
-            p = float(target_string.count(mer))
-            accum = 0.0
-            for count in range(1, max_limit_count):
-                probability = get_probability(count, k)
-                p_count = priors[count]
-                p_k = posteriors[k]
-                new_val = 1.0 * probability * count * p_count / p_k
+            p = float(target_string.count(mer))   # Number of times this k-mer appears in the target string
+            accum = 0.0                           # Calculating expected genome copy number given read count. E[c G,k | c R,k]
+            for count in range(1, max_limit_count):   # Loop over all possible genome copy numbers, C G,k #
+                probability = get_probability(count, k) # P (C R,k = k | C G,k = count)
+                p_count = priors[count]                 # P (C G,k = count)          
+                p_k = posteriors[k]                     # P (C R,k = k)
+                new_val = 1.0 * probability * count * p_count / p_k   
                 accum = accum + new_val
             value1 = value1 + cp * p
-            value2 = value2 + cp * accum
+            value2 = value2 + cp * accum 
+
+           
+           
+            
+
         if value1 <= 0.0 or flag is False:
             #if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
             #    print('OK!')
             index = index + 1
             continue
+        # print and log the value of candidate, value1 and value2  only
+        print('Candidate: ' + candidate + ', Value1: ' + str(value1) + ', Value2: ' + str(value2))
+        logging.info('Candidate: ' + candidate + ', Value1: ' + str(value1) + ', Value2: ' + str(value2))
         score = 1.0 * value2 / value1
         return_list[index] = score
         index = index + 1
@@ -463,7 +471,7 @@ def krispmer_main(parsed_args):
     logging.info('The k-spectrum restricted with-in the k-mers of target string:')
     logging.info(k_spectrum_data_in_target)
     target_coverage = get_target_coverage(k_spectrum_data_in_target, read_coverage, parsed_args.max_copy_number)
-    logging.info('The target is estimated_to_appear ' + str(target_coverage) + ' times')
+    logging.info('The target is estimated_to_appear ' + str(target_coverage) + ' times')   # C g_t #
     if int(target_coverage) > 1:
         logging.info('Warning: the target string may be a segmental-duplication region')
         print('Warning: the target string may be a segmental-duplication region')
