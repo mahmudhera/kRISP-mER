@@ -10,12 +10,14 @@ import subprocess
 from collections import Counter
 import time
 import json
-from multiprocessing import Process, Array
+from multiprocessing import Process, Array , Manager
+
 
 import krispmer.generate_all_candidates as candidate_generator
 from krispmer.calculate_priors import determine_priors_posteriors, read_histogram
 from krispmer.generate_personalized_target import read_target_region, detect_variant
 from krispmer.annotate_on_target import annotate_with_on_target_scores
+from krispmer.rs2_azimuth import rs2_score
 from krispmer.MLE import get_target_coverage
 from krispmer.generate_adjacent_mers import generate_adjacent_mers
 from krispmer.get_cfd_score import get_score
@@ -32,7 +34,8 @@ hist_output = 'krispmer_temp/k_spectrum_histo_data'
 read_coverage = -1
 target_coverage = -1
 default_sliding_window_length = 30
-
+debug_filename = None
+TARGET_COVERAGE_FILE = "target_coverage.csv"
 
 def generate_parser():
     """
@@ -87,6 +90,7 @@ def generate_parser():
                         help="Name of the log file", default="krispmer_log.log")
     parser.add_argument("-k", "--krispmer_threads", type=int, help="Number of threads you want to process grnas (default: 32)",
                         default=32)
+    parser.add_argument("-d", "--debug", type=str, help="Filename to write debug values (E[x_t], E[x_G])", default="krispmer_debug_values.txt")
     return parser
 
 
@@ -98,7 +102,12 @@ def parse_arguments(arg_string = None):
     print("krispmer v0.0.9")
     print('Parsing arguments...')
     parser = generate_parser()
-    args_after_parsing = parser.parse_args(arg_string)
+    args_after_parsing = parser.parse_args(arg_string) 
+    
+    global debug_filename
+    debug_filename = args_after_parsing.debug
+    with open(debug_filename, "w") as f:
+        f.write("Candidate, E_x_t (denominator), E_x_G (numerator)\n")
 
     # performing sanity checks on max_hd
     if args_after_parsing.max_hd > 3 or args_after_parsing.max_hd < 0:
@@ -230,105 +239,242 @@ def get_probability(count, k):
 """
 return list should have the same number of elements as candidates_count_dictionary keys
 """
-def annotate_guides_with_score_parallel(candidates_count_dictionary, jellyfish_filename, priors, posteriors,
-                                        max_hd,
-                                        target_string,
-                                        return_list):
+def annotate_guides_with_score_parallel(
+        candidates_count_dictionary,
+        jellyfish_filename,
+        priors,
+        posteriors,
+        max_hd,
+        target_string,
+        return_list,
+        target_coverage):
+
     index = 0
-    list_candidates = []
-    for candidate in list(candidates_count_dictionary.keys()):
+
+    for candidate in candidates_count_dictionary.keys():
         strand_type = candidates_count_dictionary[candidate][0]
         trie = generate_adjacent_mers(candidate, max_hd)
-        value1 = value2 = 0.0
+
+        value1 = 0.0  # E[x_t]
+        value2 = 0.0  # E[x_G]
         flag = True
+
         for mer in trie.keys():
             if strand_type == '+':
-                cp = get_score(candidate, mer) ## cp -> cutting_probability
+                cp = get_score(candidate, mer)
             else:
-                cp = get_score(reverse_complement(candidate), reverse_complement(mer))
+                cp = get_score(reverse_complement(candidate),
+                               reverse_complement(mer))
+
             qf = jellyfish_filename
             merDNA1 = jellyfish.MerDNA(mer)
             merDNA2 = jellyfish.MerDNA(reverse_complement(mer))
-            k = qf[merDNA1] + qf[merDNA2]    # Estimated count for this k-mer in the genome
-            #if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
-                #print(candidate, mer, k)
+            k = qf[merDNA1] + qf[merDNA2]
+
             if k <= 0:
                 continue
             if k >= max_k:
-                #print(candidate, max_k)
                 flag = False
                 break
-            p = float(target_string.count(mer))   # Number of times this k-mer appears in the target string
-            accum = 0.0                           # Calculating expected genome copy number given read count. E[c G,k | c R,k]
-            for count in range(1, max_limit_count):   # Loop over all possible genome copy numbers, C G,k #
-                probability = get_probability(count, k) # P (C R,k = k | C G,k = count)
-                p_count = priors[count]                 # P (C G,k = count)          
-                p_k = posteriors[k]                     # P (C R,k = k)
-                new_val = 1.0 * probability * count * p_count / p_k   
-                accum = accum + new_val
-            value1 = value1 + cp * p
-            value2 = value2 + cp * accum 
 
-           
-           
-            
+            p = float(target_string.count(mer))
+            accum = 0.0
 
-        if value1 <= 0.0 or flag is False:
-            #if candidate == 'CCTCGGCCTCCCAAAGTGCTGGG' or reverse_complement(candidate) == 'CCTCGGCCTCCCAAAGTGCTGGG':
-            #    print('OK!')
-            index = index + 1
+            for count in range(1, max_limit_count):
+                probability = get_probability(count, k)
+                p_count = priors[count]
+                p_k = posteriors[k]
+                accum += probability * count * p_count / p_k
+
+            value1 += cp * p
+            value2 += cp * accum
+
+        if value1 <= 0.0 or not flag:
+            return_list[index] = (-1.0, -1.0, -1.0)
+            index += 1
             continue
-        # print and log the value of candidate, value1 and value2  only
-        print('Candidate: ' + candidate + ', Value1: ' + str(value1) + ', Value2: ' + str(value2))
-        logging.info('Candidate: ' + candidate + ', Value1: ' + str(value1) + ', Value2: ' + str(value2))
-        score = 1.0 * value2 / value1
-        return_list[index] = score
-        index = index + 1
+	
+        # score = 1.0 * value2 / (value1* target_coverage)
+        score = 1.0 * value2
+        # print(f"value2 = {value2}, value1 = {value1}, target_coverage = {target_coverage}")
+        
+        return_list[index] = (score, value1, value2)
+        index += 1
+
+# """
+# return list should have the same number of elements as candidates_count_dictionary keys
+# """
+# def annotate_guides_with_score_parallel(
+#         candidates_count_dictionary,
+#         jellyfish_filename,
+#         priors,
+#         posteriors,
+#         max_hd,
+#         target_string,
+#         return_list,
+#         target_coverage):
+
+#     index = 0
+    
+#     # --- ADDED: Create a directory to keep your breakdown files organized ---
+#     import os
+#     os.makedirs("krispmer_score_breakdowns", exist_ok=True)
+
+#     for candidate in candidates_count_dictionary.keys():
+#         strand_type = candidates_count_dictionary[candidate][0]
+#         trie = generate_adjacent_mers(candidate, max_hd)
+
+#         value1 = 0.0  # E[x_t]
+#         value2 = 0.0  # E[x_G]
+#         flag = True
+        
+#         # --- ADDED: A list to hold the math breakdown for this specific gRNA ---
+#         breakdown_rows = []
+
+#         for mer in trie.keys():
+#             if strand_type == '+':
+#                 cp = get_score(candidate, mer)
+#             else:
+#                 cp = get_score(reverse_complement(candidate),
+#                                reverse_complement(mer))
+
+#             # --- ADDED: Optimization - if CFD score is 0, skip the heavy EM math ---
+#             if cp <= 0:
+#                 continue
+
+#             qf = jellyfish_filename
+#             merDNA1 = jellyfish.MerDNA(mer)
+#             merDNA2 = jellyfish.MerDNA(reverse_complement(mer))
+#             k = qf[merDNA1] + qf[merDNA2]
+
+#             if k <= 0:
+#                 continue
+#             if k >= max_k:
+#                 flag = False
+#                 break
+
+#             p = float(target_string.count(mer))
+#             accum = 0.0
+
+#             for count in range(1, max_limit_count):
+#                 probability = get_probability(count, k)
+#                 p_count = priors[count]
+#                 p_k = posteriors[k]
+#                 accum += probability * count * p_count / p_k
+
+#             value1 += cp * p
+            
+#             # --- ADDED: Calculate this specific variant's contribution to the final score ---
+#             contribution = cp * accum
+#             value2 += contribution
+            
+#             # --- ADDED: Log the exact math for this variant ---
+#             if contribution > 0:
+#                 # Format: Original, Variant, Raw Reads, True Copy Estimate, CFD Score, Total Contribution
+#                 row = f"{candidate},{mer},{k},{accum:.4f},{cp:.4f},{contribution:.4f}\n"
+#                 breakdown_rows.append(row)
+
+#         if value1 <= 0.0 or not flag:
+#             return_list[index] = (-1.0, -1.0, -1.0)
+#             index += 1
+#             continue
+    
+#         score = 1.0 * value2
+        
+#         # --- ADDED: Dump the ledger to a CSV if the gRNA is highly toxic (> 50 score) ---
+#         if score > 50.0:
+#             filename = f"krispmer_score_breakdowns/breakdown_{candidate}.csv"
+#             with open(filename, "w") as f:
+#                 f.write("Original_Sequence,Variant_Sequence,Raw_Reads(k),Expected_Genomic_Copies(accum),CFD_Penalty(cp),Contribution_to_Score\n")
+                
+#                 # Sort the rows so the biggest contributors are at the top!
+#                 sorted_rows = sorted(breakdown_rows, key=lambda x: float(x.split(',')[5]), reverse=True)
+#                 f.writelines(sorted_rows)
+        
+#         return_list[index] = (score, value1, value2)
+#         index += 1
 
 
-def annotate_guides_with_score(candidates_count_dictionary, window_copy_numbers, jellyfish_filename, priors,
-                               posteriors, max_hd, target_string, target_coverage, window_size, target_length, num_threads):
+def annotate_guides_with_score(
+        candidates_count_dictionary,
+        window_copy_numbers,
+        jellyfish_filename,
+        priors,
+        posteriors,
+        max_hd,
+        target_string,
+        target_coverage,
+        window_size,
+        target_length,
+        num_threads):
+
     candidates = list(candidates_count_dictionary.keys())
     candidates_per_thread = len(candidates) / num_threads
+
+    manager = Manager()
     return_lists = []
     process_list = []
     handled_so_far = 0
 
     global max_k
-    print("Largest k possible is: " + str(max_k))
+    print("Largest k possible is:", max_k)
 
     for i in range(num_threads):
         low_index = handled_so_far
-        high_index = min( int( (i+1)*candidates_per_thread ) , len(candidates))
+        high_index = min(int((i + 1) * candidates_per_thread), len(candidates))
         handled_so_far += (high_index - low_index)
-        print(low_index, high_index)
-        candidates_count_dictionary_thread = {k:candidates_count_dictionary[k] for k in candidates[low_index:high_index]}
-        return_list_this_thread = Array('d', len(list(candidates_count_dictionary_thread.keys())) * [-1.0])
-        return_lists.append(return_list_this_thread)
 
-        p = Process(target=annotate_guides_with_score_parallel, args=(candidates_count_dictionary_thread,
-                                                                      jellyfish_filename, priors, posteriors, max_hd,
-                                                                      target_string, return_list_this_thread))
+        candidates_thread = {
+            k: candidates_count_dictionary[k]
+            for k in candidates[low_index:high_index]
+        }
+
+        return_list_this_thread = manager.list(
+            [(-1.0, -1.0, -1.0)] * len(candidates_thread)
+        )
+
+        p = Process(
+            target=annotate_guides_with_score_parallel,
+            args=(candidates_thread,
+                  jellyfish_filename,
+                  priors,
+                  posteriors,
+                  max_hd,
+                  target_string,
+                  return_list_this_thread,
+                  target_coverage)
+        )
+
+        return_lists.append(return_list_this_thread)
         process_list.append(p)
         p.start()
 
-    for process in process_list:
-        process.join()
+    for p in process_list:
+        p.join()
 
-    all_scores = []
-    for return_list in return_lists:
-        all_scores = all_scores + list(return_list)
+    all_results = []
+    for r in return_lists:
+        all_results.extend(list(r))
 
     annotated_candidates = []
-    for (candidate, score) in list(zip(candidates, all_scores)):
-        annotated_candidates.append([candidate, score, -1, None, candidates_count_dictionary[candidate][0], -1, -1])
+    for candidate, (score, value1, value2) in zip(candidates, all_results):
+        annotated_candidates.append([
+            candidate,
+            score,
+            value1,   # E[x_t]
+            value2,   # E[x_G]
+            candidates_count_dictionary[candidate][0]
+        ])
 
+    annotated_candidates.sort(key=lambda x: x[1])
+    
     logging.info('DONE processing all candidates! Sorting...')
-    annotated_candidates.sort(key=sort_second)
+
 
     logging.info('Final list:')
     for annotated_candidate in annotated_candidates:
         logging.info(annotated_candidate)
+
     return annotated_candidates
 
 
@@ -404,6 +550,8 @@ def krispmer_main(parsed_args):
         v = json.loads(json.load(json_file))
         priors, posteriors, read_coverage, max_k = v[0], v[1], v[2], v[3]
         json_file.close()
+        print('Estimated read coverage (from EM) is : ' + str(read_coverage))
+        logging.info('Estimated read coverage (from EM) is : ' + str(read_coverage) + '\n')
 
     else:
         print('Calculating priors using EM (may take some time).')
@@ -471,6 +619,15 @@ def krispmer_main(parsed_args):
     logging.info('The k-spectrum restricted with-in the k-mers of target string:')
     logging.info(k_spectrum_data_in_target)
     target_coverage = get_target_coverage(k_spectrum_data_in_target, read_coverage, parsed_args.max_copy_number)
+    
+    target_name = os.path.basename(parsed_args.target_file)
+    file_exists = os.path.isfile(TARGET_COVERAGE_FILE)
+    with open(TARGET_COVERAGE_FILE, "a") as f:
+        if not file_exists:
+            f.write("target, coverage\n")
+        f.write(target_name + ", " + str(target_coverage) + "\n")
+    f.close()
+
     logging.info('The target is estimated_to_appear ' + str(target_coverage) + ' times')   # C g_t #
     if int(target_coverage) > 1:
         logging.info('Warning: the target string may be a segmental-duplication region')
@@ -541,30 +698,77 @@ def main_func():
     logging.info(args.__dict__)
     logging.info('krispmer run initiated at' + str(kr_start_time))
 
+    
+
+
+    # Create / overwrite the file at the start of each run
+    with open(debug_filename, "w") as f:
+        f.write("Candidate, E_x_t (denominator), E_x_G (numerator)\n")
+
+
     gRNAs = krispmer_main(args)
     logging.info('Total number of grnas: ' + str(len(gRNAs)))
 
     print("Writing to output file.")
     logging.info('Writing to output file...')
+
+    
     output_file = open(args.scores_file, 'w')
-    output_file.write('tgt_in_plus,tgt_in_minus,inverse_specificity,strand,gc_content\n')
+
+    # Write target-level information first
+    output_file.write(
+        "# Number of times the target is expected to be present in the genome:\n"
+    )
+    output_file.write(f"# target_coverage = {target_coverage}\n\n")
+
+    # Now write header WITHOUT target_coverage column
+    output_file.write(
+        "tgt_in_plus,"
+        "tgt_in_minus,"
+        "inverse_specificity,"
+        "Expected_cuts_in_genome,"
+        "Expected_presence_in_target,"
+        "gc_content,"
+        "strand,"
+        "on_target_score,"
+        "context_30bp\n"
+    )
+
+
     for gRNA in gRNAs:
         seq = gRNA[0]
         score = gRNA[1]
+        value1 = gRNA[2]
+        value2 = gRNA[3]
         strand = gRNA[4]
-        gc_content = get_gc_content(seq)
+
         if score < 0.0:
             continue
-        output_file.write(seq + ',' + reverse_complement(seq) + ',' + str(score) + ',' + strand + ',' + str(gc_content) + '\n')
+
+        cG = get_gc_content(seq)
+        t = target_coverage
+
+        # Inverse specificity = E[x_G] / (E[x_t] * target_coverage).
+        # annotate_guides_with_score returns score = E[x_G]; the division
+        # is commented out there, so it is applied here.
+        # value2 = E[x_G], value1 = E[x_t].
+        if value1 > 0 and t > 0:
+            inv_spec = value2 / (value1 * t)
+        else:
+            inv_spec = -1
+
+        # annotate_with_on_target_scores appends the 30 bp context as gRNA[5]
+        # when one could be extracted (it needs 4 bp of upstream sequence).
+        context30 = gRNA[5] if len(gRNA) > 5 else ''
+        on_target = rs2_score(context30) if context30 else -1
+
+        output_file.write(
+            f"{seq},{reverse_complement(seq)},{inv_spec},"
+            f"{value2},{value1},{cG},{strand},{on_target},{context30}\n"
+        )
+
     output_file.close()
 
-    if args.remove_temp:
-        if os.path.isdir('./krispmer_temp'):
-            logging.info('Cleaning up krispmer_temp directory.')
-            print('Cleaning up krispmer_temp directory')
-            cmd = 'rm -rf krispmer_temp'
-            cmd_args = cmd.split(' ')
-            subprocess.call(cmd_args)
 
     logging.info('Exiting\n')
     kr_end_time = time.time()
