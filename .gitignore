@@ -1,2 +1,26 @@
 .DS_Store
 histogram
+
+# python build artefacts
+__pycache__/
+*.py[cod]
+*.so
+build/
+dist/
+*.egg-info/
+
+# local backups
+*.bak
+*.backup
+*_backup.py
+backup_*.py
+bak_*
+*.pre_*
+MLE_backup2.py
+import
+
+# run artefacts
+logfile.log
+em_trace.csv
+target_coverage.csv
+krispmer_debug_values.txt
