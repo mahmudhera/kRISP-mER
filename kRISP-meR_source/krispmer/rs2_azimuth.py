@@ -1,25 +1,38 @@
 """
-Rule Set 2 (Doench 2016) on-target scoring via the Azimuth-2.0 package
-bundled with CRISPOR.
+Rule Set 2 (Doench 2016) on-target scoring via Azimuth 2.0.
+
+Azimuth 2.0 is vendored at vendor/Azimuth-2.0, so no separate
+download is needed. It is BSD-3-Clause, copyright 2015 Microsoft Research;
+see vendor/Azimuth-2.0/LICENSE.txt. The copy came from CRISPOR, which
+carries a Python-3 re-pickled model alongside the original.
 
 Why not krispmer/on_target_scoring: that code needs V3_model_nopos.pickle,
 which is a Python-2 protocol-2 pickle referencing PresortBestSplitter, a
 Cython class removed from scikit-learn after 0.17. It cannot be loaded on
 sklearn 1.1.
 
-Azimuth-2.0 ships its own model that does load. Verified 6 Nov 2026: the
-CRISPOR doctest 30-mer ACGCAGCGCCTCCCTCCACTCGGAAGGACT scores 0.5513089,
-i.e. 55 on CRISPOR's 0-100 scale, matching CRISPOR's expected fusi value.
+Verified 6 Nov 2026: the CRISPOR doctest 30-mer
+ACGCAGCGCCTCCCTCCACTCGGAAGGACT scores 0.5513089, i.e. 55 on CRISPOR's
+0-100 scale, matching CRISPOR's expected fusi value.
 
 Azimuth's util.py uses Python-2 implicit relative imports, so BOTH the
 package directory and its parent must be on sys.path.
+
+Cite: Doench et al., Nature Biotechnology 34:184-191, 2016.
 """
 
 import os
 import sys
 import logging
 
+# The vendored copy, found relative to this file, comes first. The
+# CRISPOR locations stay as fallbacks for installs that predate vendoring.
+_VENDORED = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'vendor', 'Azimuth-2.0')
+
 _AZIMUTH_DIRS = [
+    _VENDORED,
     os.path.expanduser('~/crisporWebsite/bin/Azimuth-2.0'),
     os.path.expanduser('~/Crispor/crisporWebsite/bin/Azimuth-2.0'),
 ]

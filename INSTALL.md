@@ -186,24 +186,9 @@ Ensure the input FASTQ and FASTA files exist.
 
 # 10. Rule Set 2 On-Target Scoring (Azimuth 2.0)
 
-On-target scores come from the Azimuth 2.0 implementation of Doench's
-Rule Set 2, which is distributed inside CRISPOR. kRISP-meR does not bundle
-it. To fetch it:
-
-```bash
-bash setup_azimuth.sh
-```
-
-That clones CRISPOR to `~/crisporWebsite`, which is where kRISP-meR looks
-first, so nothing else is needed. To put it elsewhere, pass a directory and
-export the path the script prints:
-
-```bash
-bash setup_azimuth.sh /opt/crispor
-export AZIMUTH_DIR=/opt/crispor/bin/Azimuth-2.0
-```
-
-Verify:
+On-target scores come from Azimuth 2.0, the reference implementation of
+Doench's Rule Set 2. It is included at `vendor/Azimuth-2.0`, so there
+is nothing to install. Verify with:
 
 ```bash
 python -m krispmer.rs2_azimuth
@@ -212,21 +197,30 @@ python -m krispmer.rs2_azimuth
 This scores the reference 30-mer `ACGCAGCGCCTCCCTCCACTCGGAAGGACT` and
 should print 55, the value given in CRISPOR's own doctest.
 
-**Why the bundled model is not used.** `krispmer/on_target_scoring/`
-contains `V3_model_nopos.pickle`, a Python 2 protocol 2 pickle referencing
-`PresortBestSplitter`, a Cython class removed from scikit-learn after
-version 0.17. It cannot be unpickled on a current scikit-learn, so that
-code path is dead. Azimuth 2.0 ships a model that loads correctly.
+Azimuth 2.0 is BSD-3-Clause, copyright 2015 Microsoft Research. Its
+licence travels with it at `vendor/Azimuth-2.0/LICENSE.txt`. If you
+report Rule Set 2 scores, cite Doench et al., *Nature Biotechnology*
+34:184-191, 2016.
+
+**Why the model inside `krispmer/on_target_scoring/` is not used.** That
+directory holds `V3_model_nopos.pickle`, a Python 2 protocol 2 pickle
+referencing `PresortBestSplitter`, a Cython class dropped from
+scikit-learn after version 0.17. It cannot be unpickled on a current
+scikit-learn, so that code path is dead. The vendored Azimuth copy carries
+a Python 3 re-pickled model that loads.
 
 **Why `rs2_azimuth.py` adds two paths to `sys.path`.** Azimuth's `util.py`
 uses Python 2 implicit relative imports, which under Python 3 resolve only
 when both the package directory and its parent are on the path. Appending
 both is deliberate, not redundant.
 
-**If Azimuth is missing**, kRISP-meR logs a warning and writes `-1` in the
-`on_target_score` column rather than failing. A `-1` also appears when no
-30 bp context could be extracted, which happens for guides within 4 bp of
-the target boundary.
+**Using a different copy.** The scorer checks `$AZIMUTH_DIR` first if it is
+set, then the vendored directory, then `~/crisporWebsite/bin/Azimuth-2.0`.
+
+**If Azimuth cannot be imported**, kRISP-meR logs a warning and writes `-1`
+in the `on_target_score` column rather than failing. A `-1` also appears
+when no 30 bp context could be extracted, which happens for guides within
+4 bp of the target boundary.
 
 ---
 
