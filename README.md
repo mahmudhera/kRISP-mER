@@ -16,11 +16,6 @@ This tool was initially designed to run on a Linux machine on Python2.7. With th
 For a full setup guide, and a description of the output columns, see
 [INSTALL.md](INSTALL.md).
 
-Rule Set 2 on-target scoring uses Azimuth 2.0, which is included at
-`vendor/Azimuth-2.0` (BSD-3-Clause, copyright 2015 Microsoft
-Research). Cite Doench et al., Nature Biotechnology 34:184-191, 2016 if
-you report those scores.
-
 The following need to be installed to successfully run kRISP-meR
 
 ### Non-python dependencies
