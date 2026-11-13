@@ -12,6 +12,11 @@ Most genome-wide guideRNA designer tools have to use the whole reference genome 
 This tool was initially designed to run on a Linux machine on Python2.7. With the decrepated Python2, this tool has been revised to run on Python3. If there are any issues, email mahmudhera93@gmail.com or open a github issue.
 
 ## Dependencies
+
+For a full setup guide, including the Azimuth 2.0 installation needed for
+Rule Set 2 on-target scoring and a description of the output columns, see
+[INSTALL.md](INSTALL.md).
+
 The following need to be installed to successfully run kRISP-meR
 
 ### Non-python dependencies

@@ -5,7 +5,7 @@ documentation only: no sequencing data, assemblies, intermediate files or
 result tables are stored here. Paths inside the scripts point at the
 directories they were run from on the lab machines and will need adjusting.
 
-Installation, including the Rule Set 2 setup, is in [INSTALL.md](INSTALL.md).
+Installation, including the Rule Set 2 setup, is in [INSTALL.md](../INSTALL.md) at the repository root.
 
 ## Layout
 
