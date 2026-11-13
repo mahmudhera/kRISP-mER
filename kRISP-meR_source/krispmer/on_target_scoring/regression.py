@@ -246,7 +246,7 @@ def set_up_folds(learn_options, y):
         label_encoder.fit(y['Target gene'].values)
         gene_classes = label_encoder.transform(y['Target gene'].values)
         n_folds = len(np.unique(gene_classes))
-        cv = sklearn.cross_validation.StratifiedKFold(gene_classes, n_folds=n_folds, shuffle=True)
+        cv = sklearn.model_selection.StratifiedKFold(gene_classes, n_folds=n_folds, shuffle=True)
     elif learn_options["cv"] == "gene":
         gene_list = np.unique(y['Target gene'].values)
         cv = []
