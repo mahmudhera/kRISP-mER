@@ -27,7 +27,7 @@ def DNN_on_fold(feature_sets, train, test, y, y_all, X, dim, dimsum, learn_optio
                 label_encoder.fit(y_all['Target gene'].values[train])
                 gene_classes = label_encoder.transform(y_all['Target gene'].values[train])
                 n_folds = len(np.unique(gene_classes))
-                cv = sklearn.cross_validation.StratifiedKFold(gene_classes, n_folds=n_folds, shuffle=True)
+                cv = sklearn.model_selection.StratifiedKFold(gene_classes, n_folds=n_folds, shuffle=True)
             elif learn_options["cv"]=="gene":
                 gene_list = np.unique(y_all['Target gene'].values[train])
                 cv = []

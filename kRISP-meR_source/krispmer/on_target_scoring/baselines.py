@@ -22,7 +22,7 @@ def doench_on_fold(feature_sets, train, test, y, y_all, X, dim, dimsum, learn_op
     label_encoder = sklearn.preprocessing.LabelEncoder()
     label_encoder.fit(y_all['Target gene'].values[train])
     gene_classes = label_encoder.transform(y_all['Target gene'].values[train])
-    cv = sklearn.cross_validation.StratifiedKFold(gene_classes, n_folds=10, shuffle=True)
+    cv = sklearn.model_selection.StratifiedKFold(gene_classes, n_folds=10, shuffle=True)
 
     best_penalty = None
 

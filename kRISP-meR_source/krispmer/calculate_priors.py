@@ -1,4 +1,4 @@
-__author__ = 'Mahmudur Rahman Hera'
+__author__ = 'Mahmudur Rahman Hera | Md Rownok Zahan Ratul'
 
 import numpy as np
 import pandas as pd
@@ -7,8 +7,9 @@ import logging
 import time
 from math import log
 
-threshold = 0.1
 logsum_k = {}
+logsum_k[0] = 0.0
+logsum_k[1] = 0.0
 
 
 class poisson:
@@ -16,6 +17,8 @@ class poisson:
         self.mean = mean
 
     def get_probability(self, k):
+        if self.mean == 0.0:
+            return 1.0 if k == 0 else 0.0
         total = -self.mean + k * np.log(self.mean)
         if k not in logsum_k.keys():
             logsum_k[k] = np.sum(np.log(np.arange(2, k + 1, 1.0)))
@@ -26,6 +29,10 @@ class poisson:
         self.mean = mean
 
     def get_mean(self):
+        if self.mean < 0:
+            logging.warning("Mean is negative, returning 0.0")
+            self.mean = 0.0  # Ensure mean is non-negative
+            return 0.0
         return self.mean
 
 
@@ -37,10 +44,15 @@ def read_histogram(filename):
         dic[t[0]] = t[1]
     return dic
 
+def random_init_mean(low, high):
+    return 0, np.random.randint(low, high + 1)
 
 def determine_points(histo_data, savgol_filter_window):
     #values = [log(v) for v in list(histo_data.values())]
     values = list(histo_data.values())
+    if savgol_filter_window > len(values):
+        raise ValueError("Savgol filter window is larger than data length.")
+    
     updated_values = savgol_filter(values, savgol_filter_window, savgol_filter_window-1)
     logging.info("Updated values after smoothing:")
     for v in updated_values[:500]:
@@ -48,7 +60,7 @@ def determine_points(histo_data, savgol_filter_window):
     logging.info("")
     lower = higher = -1
     zipped_data = list(zip(histo_data.keys(), updated_values))
-    for i in range(1, len(zipped_data)):
+    for i in range(1, len(zipped_data) - 1):
         if zipped_data[i - 1][1] > zipped_data[i][1] and zipped_data[i + 1][1] > zipped_data[i][1]:
             lower = zipped_data[i][0]
         if zipped_data[i - 1][1] < zipped_data[i][1] and zipped_data[i + 1][1] < zipped_data[i][1]:
@@ -57,118 +69,117 @@ def determine_points(histo_data, savgol_filter_window):
     return lower, higher
 
 
-def expectation_maximization(data_points_raw, init_mean, max_count, max_k):
-    #logging.info('The histogram data:')
-    #logging.info(data_points_raw)
-    # filter data points so that too large points are not there
-
+def expectation_maximization(data_points_raw, init_mean, max_count, max_k, threshold=None, max_iter=100):
+    # max_count -> maximum number of Poisson Distributions / maximum number of k-mer copies on the genome
+    # max_k = int((max_priors * init_coverage)) -> maximum k-mer coverage to consider in the sequencing reads
     max_key = max_k + 1
-
-    keys = data_points_raw.keys()
+    # data preparation
+    keys = set(data_points_raw.keys())
     data_points = np.zeros((max_key))
     multiplied_data_points = np.zeros((max_key))
-    for k in range(1, max_key):
+    for k in range(2, max_key):
         if k in keys:
             data_points[k] = data_points_raw[k]
             multiplied_data_points[k] = data_points_raw[k] * k
 
-    #logging.info('After filtering, the histogram data:')
-    #logging.info(data_points)
-
     # initial poisson distributions, the first is intended to capture the error component
+    # mixture initialization
     poissons = [poisson(1.01)]
     for x in range(1, max_count):
         poissons.append(poisson(float(x * init_mean)))
-
+    priors = np.array([1.0 / max_count] * max_count)
     # probability table to contain probabilities
     probabilities = np.zeros((max_count, max_key))
     # responsibility table to contain degree of membership of a certain data point to the poissons
     tendencies = np.zeros((max_count, max_key))
     # priors: the mixing probabilities
-    priors = np.array([1.0 / max_count] * max_count)
 
-    # perform EM
     print('Starting EM.')
     logging.info('starting EM algorithm.')
     iteration_count = 1
     previous_lambda = init_mean
+
+    with open('em_trace.csv', 'w') as tf:
+        tf.write(f"1,{init_mean}\n")
+
     while True:
         logging.info('Running iteration ' + str(iteration_count))
         print('Running iteration ' + str(iteration_count))
 
+        # =============E-Step==============
         logging.info('Calculating new probabilities...')
         for j in range(max_key):
             for i in range(max_count):
                 probabilities[i][j] = poissons[i].get_probability(j)
-
         logging.debug('The probabilities are:')
         logging.debug(probabilities)
-
         logging.info('Calculating degree of membership to belong to the poissons...')
-
+        # should prior be a matrix rather a vector for each poisson? -> No
         denominators = {}
         for j in range(max_key):
             denominators[j] = np.dot(probabilities[:, j], priors)
-
-        print(denominators)
-
         for i in range(max_count):
             for j in range(max_key):
-                tendencies[i][j] = 1.0 * probabilities[i][j] * priors[i] / denominators[j]
-                if np.isnan(tendencies[i][j]):
-                    tendencies[i][j] = 0.0
 
+
+                denom = denominators[j] + 1e-12 
+                tendencies[i][j] = (probabilities[i][j] * priors[i]) / denom
         logging.debug('The degrees of membership are:')
         logging.debug(tendencies)
 
+        # ============M-Step==============
         logging.info('Calculating the new means...')
         for i in range(max_count):
-            total1 = np.dot(tendencies[i, :], multiplied_data_points)
-            total2 = np.dot(tendencies[i, :], data_points)
-            poissons[i].update_mean(1.0 * total1 / total2)
-
+            total1 = np.dot(tendencies[i, :], multiplied_data_points) # Expected total read count generated by component i
+            total2 = np.dot(tendencies[i, :], data_points)            # expected number of k-mers belonging to component i
+            if total2 > 0:
+                poissons[i].update_mean(1.0 * total1 / total2)
         logging.info('The new means are:')
         means = [p.get_mean() for p in poissons]
         logging.info(means)
-        print(means[:10])
-
-        iteration_count = iteration_count + 1
-        logging.info('Estimating the average coverage from the means...')
-
-        lambdas = []
-        ownership_factors = []
-        for i in range(1, max_count):
-            lambdas.append(1.0 * poissons[i].get_mean() / float(i))
-            ownership_factors.append(np.dot(tendencies[i, :], data_points))
-
-        estimated_averaged_lambda = 1.0 * np.dot(np.array(lambdas), np.array(ownership_factors)) / sum(
-            ownership_factors)
-        logging.info('The estimated coverage for this iteration is: ' + str(estimated_averaged_lambda))
-
-        logging.info('Updating mean of the poissons according to the estimated average..')
-        for i in range(1, max_count):
-            poissons[i].update_mean(i * estimated_averaged_lambda)
 
         logging.info('Recalculating priors...')
         for i in range(0, max_count):
             val1 = np.dot(tendencies[i, :], data_points)
             val2 = np.sum(data_points)
             priors[i] = 1.0 * val1 / val2
-
         logging.info('Updated priors are: ' + str(priors))
 
+        iteration_count = iteration_count + 1
+        logging.info('Estimating the average coverage from the means...')
+
+        # ======weighted estimation of the average coverage========
+        lambdas = []
+        ownership_factors = []
+        for i in range(1, max_count):
+            lambdas.append(1.0 * poissons[i].get_mean() / float(i)) # per copy average for true genomic signal
+            ownership_factors.append(np.dot(tendencies[i, :], data_points))
+        total_ownership = sum(ownership_factors)
+        if total_ownership > 0:
+            estimated_averaged_lambda = 1.0 * np.dot(np.array(lambdas), np.array(ownership_factors)) / total_ownership
+            logging.info('The estimated coverage for this iteration is: ' + str(estimated_averaged_lambda))
+        else:
+            logging.warning("Could not estimate new lambda; ownership of signal components is zero. Keeping previous lambda.")
+            estimated_averaged_lambda = previous_lambda         
+        with open('em_trace.csv', 'a') as tf:
+            tf.write(f"{iteration_count},{estimated_averaged_lambda}\n")
+        logging.info('Updating mean of the poissons according to the estimated average..')
+        for i in range(1, max_count):
+            poissons[i].update_mean(i * estimated_averaged_lambda)
         logging.info('Finished iteration ' + str(iteration_count))
         logging.info('Coverage estimation at this iteration: ' + str(estimated_averaged_lambda))
-        if abs(previous_lambda - estimated_averaged_lambda) < threshold:
+        
+        if threshold is None and (iteration_count >= max_iter):
             break
-        else:
-            previous_lambda = estimated_averaged_lambda
+        elif threshold is not None and abs(previous_lambda - estimated_averaged_lambda) < threshold:
+            break
+        previous_lambda = estimated_averaged_lambda
 
     print('EM converged.\n')
     return estimated_averaged_lambda, priors, poissons, probabilities
 
 
-def determine_priors_posteriors(histo_data, max_priors, savgol_filter_window):
+def determine_priors_posteriors(histo_data, max_priors, savgol_filter_window, random_init=False):
     """
     determines the priors, posteriors and the read-coverage
     :param histo_data: dictionary containing histogram data
@@ -176,12 +187,18 @@ def determine_priors_posteriors(histo_data, max_priors, savgol_filter_window):
     :param savgol_filter_window: size of the savgol filter, must be an odd positive integer
     :return: priors in an array, posteriors in an array, read-coverage, the inversion point
     """
-    inv_point, init_coverage = determine_points(histo_data, savgol_filter_window)
+    if random_init:
+        logging.info('Randomly initializing the mean.')
+        inv_point, init_coverage = random_init_mean(1, 15)
+    else:
+        logging.info('Determining the initial mean from the histogram data using Sav-Gol Filter.')
+        inv_point, init_coverage = determine_points(histo_data, savgol_filter_window)
+
     logging.info('Initial coverage is: ' + str(init_coverage))
     logging.info('Inversion point is: ' + str(inv_point))
     max_k = int((max_priors * init_coverage))
     estimated_kmer_coverage, priors, poissons, probabilities = expectation_maximization(histo_data, init_coverage,
-                                                                                         max_priors, max_k)
+                                                                                         max_priors, max_k, max_iter=50)
 
     logging.info('EM converged with coverage = ' + str(estimated_kmer_coverage))
     logging.debug('Priors are: ' + str(priors))
@@ -196,19 +213,21 @@ def determine_priors_posteriors(histo_data, max_priors, savgol_filter_window):
 
     logging.debug('The posterior probabilities are:')
     logging.debug(posteriors_)
+    logging.debug('The sum of posterior probabilities is:')
+    logging.debug(sum(posteriors_))
 
     return priors, posteriors_, estimated_kmer_coverage
 
 
+
 # this main method only exists for testing purposes
 if __name__ == '__main__':
-
-    logging.basicConfig(filename="logfile.log", level=logging.INFO)
+    logging.basicConfig(filename="logfile.log", level=logging.DEBUG)
+    open('em_trace.csv', 'w').close()
     start = time.time()
-    d = read_histogram('histogram')
+    d = read_histogram('s-aureus-merged_histo')
     priors, posteriors, estimated_kmer_coverage = determine_priors_posteriors(d, 100, 15)
     print(estimated_kmer_coverage)
     print(sum(posteriors))
     end = time.time()
     print(end - start)
-    # print (determine_points(d))
